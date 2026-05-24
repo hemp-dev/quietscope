@@ -19,6 +19,7 @@ import (
 
 	"github.com/hemp-dev/quietscope/internal/audit"
 	"github.com/hemp-dev/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/safety"
 	"github.com/hemp-dev/quietscope/internal/ui"
 )
 
@@ -111,6 +112,7 @@ func ServeAuditUI(ctx context.Context, cfg Config, opts RunOptions) error {
 	mux.HandleFunc("/", state.handleIndex)
 	mux.HandleFunc("/api/audits", state.handleAudits)
 	mux.HandleFunc("/api/audits/", state.handleAudit)
+	mux.HandleFunc("/api/remediate", state.handleRemediate)
 	mux.HandleFunc("/reports/", state.handleReports)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -285,6 +287,56 @@ func (s *auditUIServer) handleReports(w http.ResponseWriter, r *http.Request) {
 	clean := filepath.Clean("/" + rel)
 	filePath := filepath.Join(snapshot.OutputDir, strings.TrimPrefix(clean, "/"))
 	http.ServeFile(w, r, filePath)
+}
+
+func (s *auditUIServer) handleRemediate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if !s.requireToken(w, r) {
+		return
+	}
+	defer r.Body.Close()
+	var req struct {
+		Action string `json:"action"` // "delete", "disable", "fix"
+		Path   string `json:"path"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32*1024)).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	home := platform.HomeDir()
+	projectRoot := ""
+	s.mu.Lock()
+	for _, job := range s.jobs {
+		if job.config.ProjectRoot != "" {
+			projectRoot = job.config.ProjectRoot
+			break
+		}
+	}
+	s.mu.Unlock()
+
+	var err error
+	switch req.Action {
+	case "delete":
+		err = safety.DeletePath(req.Path, home, projectRoot)
+	case "disable":
+		err = safety.DisablePath(req.Path, home, projectRoot)
+	case "fix":
+		err = safety.FixAISkill(req.Path, home, projectRoot)
+	default:
+		http.Error(w, "unknown action: "+req.Action, http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSONResponse(w, http.StatusOK, map[string]string{"status": "success"})
 }
 
 func (s *auditUIServer) startAudit(req auditUIRequest) auditUIJobSnapshot {
@@ -503,4 +555,3 @@ func safeDeleteOutputDir(outputDir string) {
 	}
 	_ = os.Remove(outputDir)
 }
-

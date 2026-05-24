@@ -1312,6 +1312,51 @@ details.evidence-box pre {
   const raw = document.getElementById("audit-data").textContent;
   const data = JSON.parse(raw);
 
+  const isLocalServer = window.location.protocol === "http:" || window.location.protocol === "https:";
+  const token = sessionStorage.getItem("quietscope_ui_token") || "";
+
+  function extractPathFromEvidence(evidence) {
+    if (!evidence || !evidence.startsWith("path=")) return null;
+    let str = evidence.substring(5);
+    const delims = [" type=", " tool=", " size=", " reason="];
+    for (const delim of delims) {
+      const idx = str.indexOf(delim);
+      if (idx !== -1) {
+        str = str.substring(0, idx);
+      }
+    }
+    return str.trim();
+  }
+
+  window.executeRemediation = async function(action, path, findingId) {
+    if (!window.confirm("Are you sure you want to perform action '" + action + "' on path: " + path + "?")) return;
+    try {
+      const res = await fetch("/api/remediate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Audit-Token": token
+        },
+        body: JSON.stringify({ action: action, path: path })
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        window.alert("Remediation failed: " + text);
+        return;
+      }
+      window.alert("Remediation successful!");
+      
+      if (findingId) {
+        window.toggleResolveFinding(findingId);
+        renderFindings();
+      } else {
+        renderAll();
+      }
+    } catch (err) {
+      window.alert("Error during remediation: " + err);
+    }
+  };
+
   // App Client State
   const state = {
     sort: "severity",
@@ -1576,6 +1621,29 @@ details.evidence-box pre {
       ].join("\n");
       
       det.append(sum, pre); 
+
+      // Add remediation buttons if isLocalServer and path exists
+      const path = extractPathFromEvidence(f.evidence);
+      if (isLocalServer && path && !state.resolvedFindings.has(f.id)) {
+        const actionDiv = document.createElement("div");
+        actionDiv.style.marginTop = "10px";
+        actionDiv.style.display = "flex";
+        actionDiv.style.gap = "8px";
+        
+        const isSkill = f.category === 'ai_security' || path.includes('.claude/skills') || path.includes('.hermes') || path.includes('.opencode') || path.includes('.cursorrules') || f.title.toLowerCase().includes('skill') || f.title.toLowerCase().includes('prompt');
+        const hasSuspiciousPatterns = f.title.toLowerCase().includes('suspicious') || (f.evidence && f.evidence.includes('suspicious_patterns='));
+        const disableText = path.endsWith('.disabled') ? 'Enable Skill' : 'Disable Skill';
+
+        actionDiv.innerHTML = '<button type="button" class="btn danger" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'delete\', \'' + path.replace(/'/g, "\\'") + '\', \'' + f.id + '\')">Delete File</button>';
+        if (isSkill) {
+          actionDiv.innerHTML += '<button type="button" class="btn warning" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'disable\', \'' + path.replace(/'/g, "\\'") + '\', \'' + f.id + '\')">' + disableText + '</button>';
+        }
+        if (hasSuspiciousPatterns) {
+          actionDiv.innerHTML += '<button type="button" class="btn primary" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'fix\', \'' + path.replace(/'/g, "\\'") + '\', \'' + f.id + '\')">Fix Patterns</button>';
+        }
+        det.appendChild(actionDiv);
+      }
+
       td.appendChild(det); 
       tr.appendChild(td); 
       
@@ -1920,6 +1988,16 @@ details.evidence-box pre {
           td.textContent = text(v); 
           tr.appendChild(td);
         });
+
+        // Storage actions column
+        const tdAction = document.createElement("td");
+        if (isLocalServer) {
+          tdAction.innerHTML = '<button type="button" class="btn danger" style="padding: 2px 6px; font-size: 10px; height: auto;" onclick="window.executeRemediation(\'delete\', \'' + m.path.replace(/'/g, "\\'") + '\')">Delete Model</button>';
+        } else {
+          tdAction.innerHTML = '<span style="font-size: 10px; color: var(--muted);">Manual Only</span>';
+        }
+        tr.appendChild(tdAction);
+
         modelBody.appendChild(tr);
       });
     }
@@ -1938,10 +2016,33 @@ details.evidence-box pre {
     const box = $("cleanup-section"); 
     if(!box) return;
     box.textContent = "";
-    (data.cleanup_candidates || []).forEach(c => addItem(box, c.path, ["Cache folder size: " + bytes(c.estimated_size_bytes), "Evaluated cleanup risk: " + text(c.risk), "Auto-fixable: " + text(c.safe_to_auto_fix), "Clean trigger cause: " + text(c.reason)]));
-    if (!(data.cleanup_candidates || []).length) {
+    const candidates = data.cleanup_candidates || [];
+    if (!candidates.length) {
       addItem(box, "Local reclaimable caches", ["Zero unnecessary diagnostic caches identified."]);
+      return;
     }
+    candidates.forEach(c => {
+      const d = document.createElement("div"); 
+      d.className = "card"; 
+      const h = document.createElement("h3"); 
+      h.textContent = c.path; 
+      const pre = document.createElement("pre"); 
+      pre.textContent = masked([
+        "Cache folder size: " + bytes(c.estimated_size_bytes),
+        "Evaluated cleanup risk: " + text(c.risk),
+        "Auto-fixable: " + text(c.safe_to_auto_fix),
+        "Clean trigger cause: " + text(c.reason)
+      ].join("\n"));
+      d.append(h, pre);
+      
+      if (isLocalServer) {
+        const actionDiv = document.createElement("div");
+        actionDiv.style.marginTop = "10px";
+        actionDiv.innerHTML = '<button type="button" class="btn danger" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'delete\', \'' + c.path.replace(/'/g, "\\'") + '\', \'' + (c.finding_id || '') + '\')">Delete Cache</button>';
+        d.appendChild(actionDiv);
+      }
+      box.appendChild(d);
+    });
   }
 
   function addItem(parent, title, lines) { 

@@ -19,6 +19,7 @@ import (
 	"github.com/hemp-dev/quietscope/internal/app"
 	"github.com/hemp-dev/quietscope/internal/audit"
 	"github.com/hemp-dev/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/safety"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -303,4 +304,36 @@ func randomHex(bytesLen int) string {
 		return fmt.Sprintf("%x", time.Now().UnixNano())
 	}
 	return hex.EncodeToString(b)
+}
+
+func (a *App) getHomeAndProjectRoot() (string, string) {
+	home := platform.HomeDir()
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	projectRoot := ""
+	for _, job := range a.jobs {
+		if job.config.ProjectRoot != "" {
+			projectRoot = job.config.ProjectRoot
+			break
+		}
+	}
+	return home, projectRoot
+}
+
+// DeletePath safely deletes a file or directory.
+func (a *App) DeletePath(path string) error {
+	home, proj := a.getHomeAndProjectRoot()
+	return safety.DeletePath(path, home, proj)
+}
+
+// DisablePath safely disables/enables an AI skill/rules file.
+func (a *App) DisablePath(path string) error {
+	home, proj := a.getHomeAndProjectRoot()
+	return safety.DisablePath(path, home, proj)
+}
+
+// FixAISkill safely comments out suspicious patterns in an AI skill file.
+func (a *App) FixAISkill(path string) error {
+	home, proj := a.getHomeAndProjectRoot()
+	return safety.FixAISkill(path, home, proj)
 }
