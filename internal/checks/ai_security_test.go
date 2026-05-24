@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/projectauthors/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/audit"
 )
 
 func TestDangerousCommandPatternMatching(t *testing.T) {
@@ -80,5 +80,80 @@ func TestCrossPlatformAIConfigCandidates(t *testing.T) {
 		if !strings.Contains(windowsPaths, expected) {
 			t.Fatalf("expected Windows MCP path %s in %s", expected, windowsPaths)
 		}
+	}
+}
+
+func TestUnpinnedLauncherDetection(t *testing.T) {
+	cases := []struct {
+		cmd      string
+		args     []string
+		expected audit.Severity
+	}{
+		{"npx", []string{"some-server@latest"}, audit.SeverityHigh},
+		{"uvx", []string{"some-server"}, audit.SeverityHigh},       // unpinned
+		{"bunx", []string{"some-server@1.2.3"}, audit.SeverityLow}, // pinned
+		{"pipx", []string{"run", "some-server@latest"}, audit.SeverityHigh},
+	}
+	for _, c := range cases {
+		sev, _, _, _, _ := ClassifyMCPCommandRisk(c.cmd, c.args)
+		if sev != c.expected {
+			t.Fatalf("expected %s for %s %v, got %s", c.expected, c.cmd, c.args, sev)
+		}
+	}
+}
+
+func TestClassifyMCPCapability(t *testing.T) {
+	cases := []struct {
+		name     string
+		cmd      string
+		args     []string
+		expected string
+	}{
+		{"bash-launcher", "bash", []string{"-c"}, "Terminal / Shell command execution (Excessive Agency risk)"},
+		{"filesystem-server", "node", []string{"fs-server.js"}, "Filesystem write or read access (Excessive Agency risk)"},
+		{"playwright", "npx", []string{"playwright-mcp"}, "Browser automation (Indirect prompt injection / Data leak risk)"},
+		{"db-accessor", "postgres-server", []string{}, "Database access (Direct file or data tampering risk)"},
+	}
+	for _, c := range cases {
+		capName, _ := ClassifyMCPCapability(c.name, c.cmd, c.args)
+		if !strings.Contains(capName, c.expected) {
+			t.Fatalf("expected cap containing %q for %s/%s, got %q", c.expected, c.name, c.cmd, capName)
+		}
+	}
+}
+
+func TestScanConfigForAutoApproval(t *testing.T) {
+	data := []byte(`{
+		"agent": {
+			"tool_permissions": {
+				"default": "allow"
+			}
+		},
+		"auto_execute": true
+	}`)
+	reason, sev := scanConfigForAutoApproval("settings.json", data)
+	if reason == "" || sev != audit.SeverityHigh {
+		t.Fatalf("expected auto-approval warning, got reason=%q sev=%s", reason, sev)
+	}
+}
+
+func TestDockerComposeScanning(t *testing.T) {
+	dir := t.TempDir()
+	composePath := filepath.Join(dir, "docker-compose.yml")
+	content := `
+version: '3'
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+`
+	if err := os.WriteFile(composePath, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := audit.RuntimeConfig{ProjectRoot: dir}
+	findings := inspectDockerComposeAI(cfg)
+	if len(findings) != 1 || !strings.Contains(findings[0].Title, "Containerized AI stack") {
+		t.Fatalf("expected 1 docker port finding, got %#v", findings)
 	}
 }

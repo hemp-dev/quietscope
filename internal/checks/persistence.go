@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
-	"github.com/projectauthors/quietscope/internal/safety"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/safety"
 )
 
 func RunPersistence(ctx context.Context, cfg audit.RuntimeConfig, runner *platform.Runner) (audit.CheckResult, error) {
@@ -137,6 +137,12 @@ func inspectCronFiles(home string) []audit.Finding {
 
 func inspectShellStartupFiles(home string) []audit.Finding {
 	names := []string{".zshrc", ".zprofile", ".bashrc", ".bash_profile", ".profile"}
+	if platform.IsWindows() {
+		names = append(names,
+			filepath.Join("Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"),
+			filepath.Join("Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1"),
+		)
+	}
 	var findings []audit.Finding
 	for _, name := range names {
 		path := filepath.Join(home, name)
@@ -144,9 +150,72 @@ func inspectShellStartupFiles(home string) []audit.Finding {
 			continue
 		}
 		findings = append(findings, scanFileForPersistence(path, home, "Shell startup file: "+name))
+		findings = append(findings, scanShellProfileForAI(path)...)
 	}
 	if len(findings) == 0 {
 		findings = append(findings, newFinding("persistence-shell-startup-none", audit.CategoryPersistence, "Shell startup files", audit.StatusInfo, audit.SeverityInfo, "No common shell startup files found in the home directory.", "No action needed.", ""))
+	}
+	return findings
+}
+
+func scanShellProfileForAI(path string) []audit.Finding {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(io.LimitReader(file, 512*1024))
+	var findings []audit.Finding
+	var exportedKeys []string
+	var startsAI bool
+	lineNo := 0
+
+	aiKeys := []string{"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "COHERE_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "TOGETHER_API_KEY", "AWS_ACCESS_KEY_ID", "AZURE_OPENAI_API_KEY", "GITHUB_TOKEN", "HF_TOKEN"}
+	aiCmds := []string{"ollama start", "ollama serve", "lmstudio", "lm studio", "localai", "vllm"}
+
+	for scanner.Scan() {
+		lineNo++
+		line := scanner.Text()
+		lower := strings.ToLower(line)
+
+		for _, key := range aiKeys {
+			if strings.Contains(line, key) && (strings.Contains(lower, "export") || strings.Contains(line, "=")) {
+				exportedKeys = append(exportedKeys, fmt.Sprintf("%s (line %d)", key, lineNo))
+			}
+		}
+
+		for _, cmd := range aiCmds {
+			if strings.Contains(lower, cmd) && !strings.HasPrefix(strings.TrimSpace(lower), "#") {
+				startsAI = true
+			}
+		}
+	}
+
+	if len(exportedKeys) > 0 {
+		findings = append(findings, newFinding(
+			"ai-shell-env-"+safeID(path),
+			audit.CategoryAISecurity,
+			"AI API key environment variables exported in shell profile: "+filepath.Base(path),
+			audit.StatusWarn,
+			audit.SeverityMedium,
+			fmt.Sprintf("path=%s; exported=%s (values are redacted)", path, strings.Join(exportedKeys, ", ")),
+			"Avoid storing secret API keys in plaintext shell profiles. Use a secure credential manager, keychain, or dotenv files that are git-ignored.",
+			"",
+		))
+	}
+
+	if startsAI {
+		findings = append(findings, newFinding(
+			"ai-shell-autostart-"+safeID(path),
+			audit.CategoryAISecurity,
+			"AI service auto-start in shell profile: "+filepath.Base(path),
+			audit.StatusWarn,
+			audit.SeverityLow,
+			fmt.Sprintf("path=%s; starts local AI model/API servers automatically on terminal login", path),
+			"Review shell autostart scripts to prevent unauthenticated AI APIs or model servers from running in the background automatically.",
+			"",
+		))
 	}
 	return findings
 }

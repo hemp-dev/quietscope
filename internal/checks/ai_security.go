@@ -13,9 +13,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
-	"github.com/projectauthors/quietscope/internal/safety"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/safety"
 )
 
 var dangerousCommandPatterns = []string{
@@ -50,13 +50,16 @@ func RunAISecurity(ctx context.Context, cfg audit.RuntimeConfig, runner *platfor
 	findings = append(findings, serverFindings...)
 	ai.LocalServers = append(ai.LocalServers, servers...)
 
-	if cfg.Deep {
-		artifactFindings, artifacts := scanPromptInjectionArtifacts(cfg)
-		findings = append(findings, artifactFindings...)
-		ai.PromptArtifacts = append(ai.PromptArtifacts, artifacts...)
-	} else {
-		findings = append(findings, newFinding("ai-prompt-artifact-scan", audit.CategoryAISecurity, "Prompt-injection artifact scan", audit.StatusInfo, audit.SeverityInfo, "Deep scan is disabled. Use --deep with --project-root to scan project documentation and task files for prompt-injection artifacts.", "Review untrusted repositories before opening them in agent mode.", ""))
+	artifactFindings, artifacts := scanPromptInjectionArtifacts(cfg)
+	findings = append(findings, artifactFindings...)
+	ai.PromptArtifacts = append(ai.PromptArtifacts, artifacts...)
+
+	if !cfg.Deep {
+		findings = append(findings, newFinding("ai-prompt-artifact-scan-info", audit.CategoryAISecurity, "Deep prompt-injection artifact scan", audit.StatusInfo, audit.SeverityInfo, "Deep scan is disabled. Only key rules files were checked. Use --deep with --project-root to recursively scan all documentation files.", "Review untrusted repositories before opening them in agent mode.", ""))
 	}
+
+	dockerFindings := inspectDockerComposeAI(cfg)
+	findings = append(findings, dockerFindings...)
 
 	ai.Recommendations = aiHardeningRecommendations()
 	findings = append(findings, newFinding("ai-hardening-recommendations", audit.CategoryAISecurity, "AI hardening recommendations", audit.StatusInfo, audit.SeverityInfo, strings.Join(ai.Recommendations, "; "), "Apply the recommendations that match your workflow and risk tolerance.", ""))
@@ -164,6 +167,25 @@ func inspectAIConfigs(cfg audit.RuntimeConfig) ([]audit.Finding, []audit.MCPConf
 		if strings.HasSuffix(path, "mcp.json") || strings.HasSuffix(path, "claude_desktop_config.json") {
 			infos = append(infos, audit.MCPConfigInfo{Path: path, Permission: platform.FormatPerm(meta.Mode), Risk: "metadata", Description: "MCP-related config path exists; parsed by MCP checks when valid JSON."})
 		}
+
+		// Parse regular files for auto-approval weakening settings
+		if meta.Mode.IsRegular() && meta.Size < 1024*1024 { // < 1MB
+			data, err := os.ReadFile(path)
+			if err == nil {
+				if reason, sev := scanConfigForAutoApproval(path, data); reason != "" {
+					findings = append(findings, newFinding(
+						"ai-config-weakening-"+safeID(path),
+						audit.CategoryAISecurity,
+						"AI Agent auto-approval/weakening settings detected",
+						audit.StatusWarn,
+						sev,
+						fmt.Sprintf("path=%s; warning=%s", path, reason),
+						"Disable auto-approve settings. AI agents should always prompt for confirmation before running terminal commands, writing files, or accessing the network.",
+						"",
+					))
+				}
+			}
+		}
 	}
 	if len(findings) == 0 {
 		findings = append(findings, newFinding("ai-config-paths", audit.CategoryAISecurity, "AI config paths", audit.StatusInfo, audit.SeverityInfo, "No known AI configuration paths detected in common locations.", "No action needed unless AI tools are installed in custom locations.", ""))
@@ -190,15 +212,37 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 		filepath.Join(cfg.HomeDir, ".config", "claude"),
 		filepath.Join(cfg.HomeDir, ".config", "opencode"),
 		filepath.Join(cfg.HomeDir, ".config", "hermes"),
+
+		// Specific config files
+		filepath.Join(cfg.HomeDir, ".cursor", "mcp.json"),
+		filepath.Join(cfg.HomeDir, ".continue", "config.json"),
+		filepath.Join(cfg.HomeDir, ".continue", "config.yaml"),
+		filepath.Join(cfg.HomeDir, ".claude", "claude.json"),
+		filepath.Join(cfg.HomeDir, ".claude.json"),
+		filepath.Join(cfg.HomeDir, ".claude_desktop_config.json"),
+		filepath.Join(cfg.HomeDir, ".codex", "config.toml"),
+		filepath.Join(cfg.HomeDir, ".cline", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".cline", "state.json"),
+		filepath.Join(cfg.HomeDir, ".roo", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".roo", "state.json"),
+		filepath.Join(cfg.HomeDir, ".windsurf", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".windsurf", "memories.json"),
 	}
 	if osName.IsDarwin() {
 		paths = append(paths,
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Cursor"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Cursor", "User", "settings.json"),
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Claude"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Code"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Code", "User", "settings.json"),
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Continue"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Continue", "config.json"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Continue", "config.yaml"),
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "LM Studio"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "LM Studio", "settings.json"),
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "anythingllm-desktop"),
+			filepath.Join(cfg.HomeDir, "Library", "Application Support", "AnythingLLM"),
 			filepath.Join(cfg.HomeDir, "Library", "Application Support", "Jan"),
 			filepath.Join(cfg.HomeDir, "Library", "Preferences"),
 		)
@@ -206,13 +250,18 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 	if osName.IsWindows() {
 		paths = append(paths,
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Claude"),
+			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Claude", "claude_desktop_config.json"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Claude Code"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Code"),
+			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Code", "User", "settings.json"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Cursor"),
+			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Cursor", "User", "settings.json"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Continue"),
+			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Continue", "config.json"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "opencode"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Hermes"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "LM Studio"),
+			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "LM Studio", "settings.json"),
 			filepath.Join(cfg.HomeDir, "AppData", "Roaming", "Jan"),
 			filepath.Join(cfg.HomeDir, "AppData", "Local", "Programs", "Cursor"),
 			filepath.Join(cfg.HomeDir, "AppData", "Local", "Programs", "Claude"),
@@ -221,8 +270,11 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 	if cfg.ProjectRoot != "" {
 		paths = append(paths,
 			filepath.Join(cfg.ProjectRoot, ".cursor"),
+			filepath.Join(cfg.ProjectRoot, ".cursor", "mcp.json"),
 			filepath.Join(cfg.ProjectRoot, ".vscode"),
+			filepath.Join(cfg.ProjectRoot, ".vscode", "settings.json"),
 			filepath.Join(cfg.ProjectRoot, ".continue"),
+			filepath.Join(cfg.ProjectRoot, ".continue", "config.json"),
 			filepath.Join(cfg.ProjectRoot, ".roo"),
 			filepath.Join(cfg.ProjectRoot, ".cline"),
 			filepath.Join(cfg.ProjectRoot, "mcp.json"),
@@ -258,6 +310,22 @@ func inspectMCPConfigs(cfg audit.RuntimeConfig) ([]audit.Finding, []audit.MCPCon
 			continue
 		}
 		for _, cmd := range parsed {
+			if cmd.URL != "" || cmd.Transport != "" {
+				severity := audit.SeverityMedium
+				status := audit.StatusWarn
+				reason := fmt.Sprintf("remote MCP endpoint configured: url=%s transport=%s", cmd.URL, cmd.Transport)
+				if cmd.URL != "" && !strings.Contains(cmd.URL, "localhost") && !strings.Contains(cmd.URL, "127.0.0.1") && !strings.Contains(cmd.URL, "::1") {
+					severity = audit.SeverityHigh
+					reason = fmt.Sprintf("external remote MCP endpoint configured (beyond local machine trust boundary): url=%s", cmd.URL)
+				}
+				evidence := fmt.Sprintf("path=%s server=%s mode=%s url=%s transport=%s risk=%s", path, cmd.Name, perm, cmd.URL, cmd.Transport, reason)
+				f := newFinding("ai-mcp-remote-"+safeID(path+"-"+cmd.Name), audit.CategoryAISecurity, "Remote MCP server endpoint: "+cmd.Name, status, severity, evidence, "Ensure the remote MCP server and its connection are secure. Remote MCP servers expand the trust boundary beyond your local machine.", "")
+				f.NetworkExfiltrationRisk = true
+				findings = append(findings, f)
+				infos = append(infos, audit.MCPConfigInfo{Path: path, ServerName: cmd.Name, Command: cmd.URL, Permission: perm, Risk: string(severity), Description: reason})
+				continue
+			}
+
 			severity, reason, dataRisk, commandRisk, networkRisk := ClassifyMCPCommandRisk(cmd.Command, cmd.Args)
 			status := audit.StatusInfo
 			if severity == audit.SeverityHigh || severity == audit.SeverityCritical {
@@ -268,8 +336,18 @@ func inspectMCPConfigs(cfg audit.RuntimeConfig) ([]audit.Finding, []audit.MCPCon
 					severity = audit.SeverityMedium
 				}
 			}
+
+			capabilityRisk, capSeverity := ClassifyMCPCapability(cmd.Name, cmd.Command, cmd.Args)
+			if capSeverity > severity {
+				severity = capSeverity
+				status = audit.StatusWarn
+			}
 			commandLine := sanitizeCommandLine(cmd.Command, cmd.Args)
 			evidence := fmt.Sprintf("path=%s server=%s mode=%s command=%s risk=%s", path, cmd.Name, perm, commandLine, reason)
+			if capabilityRisk != "" {
+				evidence += "; capability=" + capabilityRisk
+				reason += "; " + capabilityRisk
+			}
 			if isProjectLocal(path, cfg.ProjectRoot) {
 				evidence += "; project-local MCP config can be auto-started by some tools after trust prompts/settings"
 			}
@@ -288,9 +366,11 @@ func inspectMCPConfigs(cfg audit.RuntimeConfig) ([]audit.Finding, []audit.MCPCon
 }
 
 type mcpCommand struct {
-	Name    string
-	Command string
-	Args    []string
+	Name      string
+	Command   string
+	Args      []string
+	URL       string
+	Transport string
 }
 
 func candidateMCPPaths(cfg audit.RuntimeConfig) []string {
@@ -410,8 +490,10 @@ func extractMCPCommands(root any) []mcpCommand {
 				if server, ok := raw.(map[string]any); ok {
 					cmd := stringValue(server["command"])
 					args := stringSliceValue(server["args"])
-					if cmd != "" || len(args) > 0 {
-						out = append(out, mcpCommand{Name: name, Command: cmd, Args: args})
+					urlStr := stringValue(server["url"])
+					transport := stringValue(server["transport"])
+					if cmd != "" || len(args) > 0 || urlStr != "" || transport != "" {
+						out = append(out, mcpCommand{Name: name, Command: cmd, Args: args, URL: urlStr, Transport: transport})
 					}
 				}
 			}
@@ -421,8 +503,10 @@ func extractMCPCommands(root any) []mcpCommand {
 				if server, ok := raw.(map[string]any); ok {
 					cmd := stringValue(server["command"])
 					args := stringSliceValue(server["args"])
-					if cmd != "" || len(args) > 0 {
-						out = append(out, mcpCommand{Name: name, Command: cmd, Args: args})
+					urlStr := stringValue(server["url"])
+					transport := stringValue(server["transport"])
+					if cmd != "" || len(args) > 0 || urlStr != "" || transport != "" {
+						out = append(out, mcpCommand{Name: name, Command: cmd, Args: args, URL: urlStr, Transport: transport})
 					}
 				}
 			}
@@ -437,8 +521,17 @@ func extractMCPCommands(root any) []mcpCommand {
 func recursiveMCPCommandSearch(value any, name string, out *[]mcpCommand) {
 	switch x := value.(type) {
 	case map[string]any:
-		if cmd := stringValue(x["command"]); cmd != "" {
-			*out = append(*out, mcpCommand{Name: name, Command: cmd, Args: stringSliceValue(x["args"])})
+		cmd := stringValue(x["command"])
+		urlStr := stringValue(x["url"])
+		transport := stringValue(x["transport"])
+		if cmd != "" || urlStr != "" || transport != "" {
+			*out = append(*out, mcpCommand{
+				Name:      name,
+				Command:   cmd,
+				Args:      stringSliceValue(x["args"]),
+				URL:       urlStr,
+				Transport: transport,
+			})
 			return
 		}
 		for k, v := range x {
@@ -449,6 +542,67 @@ func recursiveMCPCommandSearch(value any, name string, out *[]mcpCommand) {
 			recursiveMCPCommandSearch(item, fmt.Sprintf("%s[%d]", name, i), out)
 		}
 	}
+}
+
+func ClassifyMCPCapability(name, command string, args []string) (string, audit.Severity) {
+	lowerName := strings.ToLower(name)
+	lowerCmd := strings.ToLower(command)
+
+	if strings.Contains(lowerName, "terminal") || strings.Contains(lowerName, "shell") || strings.Contains(lowerName, "bash") ||
+		strings.Contains(lowerCmd, "bash") || strings.Contains(lowerCmd, "sh") || strings.Contains(lowerCmd, "zsh") ||
+		strings.Contains(lowerName, "command") || strings.Contains(lowerName, "execute") {
+		return "Terminal / Shell command execution (Excessive Agency risk)", audit.SeverityHigh
+	}
+	if strings.Contains(lowerName, "filesystem") || strings.Contains(lowerName, "file") || strings.Contains(lowerName, "fs") ||
+		strings.Contains(lowerCmd, "fs") || strings.Contains(lowerCmd, "filesystem") {
+		return "Filesystem write or read access (Excessive Agency risk)", audit.SeverityHigh
+	}
+	if strings.Contains(lowerName, "browser") || strings.Contains(lowerName, "playwright") || strings.Contains(lowerName, "puppeteer") ||
+		strings.Contains(lowerCmd, "playwright") || strings.Contains(lowerCmd, "puppeteer") || strings.Contains(lowerName, "selenium") {
+		return "Browser automation (Indirect prompt injection / Data leak risk)", audit.SeverityHigh
+	}
+	if strings.Contains(lowerName, "database") || strings.Contains(lowerName, "postgres") || strings.Contains(lowerName, "sqlite") ||
+		strings.Contains(lowerName, "db") || strings.Contains(lowerCmd, "postgres") || strings.Contains(lowerCmd, "mysql") {
+		return "Database access (Direct file or data tampering risk)", audit.SeverityHigh
+	}
+	if strings.Contains(lowerName, "aws") || strings.Contains(lowerName, "gcp") || strings.Contains(lowerName, "azure") ||
+		strings.Contains(lowerName, "cloud") || strings.Contains(lowerCmd, "aws") || strings.Contains(lowerCmd, "gcloud") {
+		return "Cloud console / Infrastructure management (High impact risk)", audit.SeverityCritical
+	}
+	if strings.Contains(lowerName, "github") || strings.Contains(lowerName, "gitlab") || strings.Contains(lowerName, "git") ||
+		strings.Contains(lowerCmd, "git") {
+		return "Source control repository access (Git history / Code exfiltration risk)", audit.SeverityHigh
+	}
+	if strings.Contains(lowerName, "slack") || strings.Contains(lowerName, "gmail") || strings.Contains(lowerName, "drive") ||
+		strings.Contains(lowerName, "email") || strings.Contains(lowerName, "jira") {
+		return "External communication / Productivity suite integration (Data leak risk)", audit.SeverityMedium
+	}
+	if strings.Contains(lowerName, "ssh") || strings.Contains(lowerCmd, "ssh") {
+		return "SSH / Remote administration (Command execution risk)", audit.SeverityCritical
+	}
+	return "", audit.SeverityInfo
+}
+
+func scanConfigForAutoApproval(path string, data []byte) (string, audit.Severity) {
+	lower := strings.ToLower(string(data))
+	if strings.Contains(lower, "tool_permissions") && (strings.Contains(lower, "allow") || strings.Contains(lower, "default")) {
+		return "Zed/Editor tool permissions configured with permissive defaults", audit.SeverityHigh
+	}
+	if strings.Contains(lower, "auto_execute") || strings.Contains(lower, "\"turbo\"") || strings.Contains(lower, "autoexecution") {
+		return "Windsurf auto-execution / Turbo mode enabled with reduced confirmation gates", audit.SeverityHigh
+	}
+	if strings.Contains(lower, "autoapprove") || strings.Contains(lower, "auto-approve") {
+		if strings.Contains(lower, "true") || strings.Contains(lower, "always") {
+			return "AI Agent auto-approval policy is set to run commands or tools without manual confirmation", audit.SeverityHigh
+		}
+	}
+	if strings.Contains(lower, "auto_run") && strings.Contains(lower, "true") {
+		return "Open Interpreter auto_run is enabled, bypassing approval checkpoints", audit.SeverityHigh
+	}
+	if strings.Contains(lower, "approval_policy") && (strings.Contains(lower, "never") || strings.Contains(lower, "none") || strings.Contains(lower, "always")) {
+		return "Codex approval policy set to a permissive state", audit.SeverityHigh
+	}
+	return "", audit.SeverityInfo
 }
 
 func stringValue(v any) string {
@@ -490,9 +644,9 @@ func ClassifyMCPCommandRisk(command string, args []string) (audit.Severity, stri
 	if dataRisk {
 		return audit.SeverityHigh, "command references secret-sensitive paths", true, commandRisk, networkRisk
 	}
-	if strings.Contains(line, " npx ") || strings.Contains(line, " uvx ") {
-		if !looksPinned(line) {
-			return audit.SeverityMedium, "remote package command appears unpinned", dataRisk, true, networkRisk
+	if strings.Contains(line, " npx ") || strings.Contains(line, " uvx ") || strings.Contains(line, " bunx ") || strings.Contains(line, " pipx ") || strings.Contains(line, " deno run ") || strings.Contains(line, " bun run ") {
+		if strings.Contains(line, "@latest") || !looksPinned(line) {
+			return audit.SeverityHigh, "remote package command appears unpinned or uses latest tag", dataRisk, true, networkRisk
 		}
 		return audit.SeverityLow, "remote package command appears pinned but still needs review", dataRisk, true, networkRisk
 	}
@@ -673,6 +827,99 @@ func splitAddressPort(s string) (string, string) {
 	return strings.Trim(s[:idx], "[]"), s[idx+1:]
 }
 
+func checkRulesFilePermissions(path string) *audit.Finding {
+	meta, err := platform.StatMeta(path)
+	if err != nil {
+		return nil
+	}
+	status := audit.StatusPass
+	severity := audit.SeverityInfo
+	evidence := fmt.Sprintf("path=%s mode=%s owner=%d group=%d", path, platform.FormatPerm(meta.Mode), meta.UID, meta.GID)
+
+	if platform.IsWorldWritable(meta.Mode) {
+		status = audit.StatusFail
+		severity = audit.SeverityHigh
+		evidence += "; world-writable (allows any local user to modify instructions)"
+	} else if platform.IsGroupWritable(meta.Mode) {
+		status = audit.StatusWarn
+		severity = audit.SeverityMedium
+		evidence += "; group-writable"
+	} else {
+		return nil
+	}
+
+	f := newFinding(
+		"ai-rules-perm-"+safeID(path),
+		audit.CategoryAISecurity,
+		"AI rules/instruction file permissions risk: "+filepath.Base(path),
+		status,
+		severity,
+		evidence,
+		"Restrict write access to yourself or system administrator. Permissive rules permissions allow local privilege escalation or context poisoning.",
+		"",
+	)
+	return &f
+}
+
+func inspectDockerComposeAI(cfg audit.RuntimeConfig) []audit.Finding {
+	if cfg.ProjectRoot == "" {
+		return nil
+	}
+	var findings []audit.Finding
+	files := []string{
+		filepath.Join(cfg.ProjectRoot, "docker-compose.yml"),
+		filepath.Join(cfg.ProjectRoot, "docker-compose.yaml"),
+		filepath.Join(cfg.ProjectRoot, "compose.yml"),
+		filepath.Join(cfg.ProjectRoot, "compose.yaml"),
+	}
+	for _, file := range files {
+		_, err := os.Stat(file)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(file)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		lines := strings.Split(content, "\n")
+		for i, line := range lines {
+			lower := strings.ToLower(line)
+			if strings.Contains(lower, "ports:") {
+				for j := i + 1; j < len(lines); j++ {
+					nextLine := lines[j]
+					if !strings.HasPrefix(strings.TrimSpace(nextLine), "-") {
+						break
+					}
+					portMapping := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(nextLine), "-"))
+					portMapping = strings.Trim(portMapping, "\"'")
+
+					isAIPort := false
+					for _, port := range []string{"11434", "1234", "3000", "5000", "7860", "8000", "8080", "8188", "8501", "8888", "9090"} {
+						if strings.Contains(portMapping, port) {
+							isAIPort = true
+							break
+						}
+					}
+					if isAIPort && !strings.Contains(portMapping, "127.0.0.1") && !strings.Contains(portMapping, "::1") {
+						findings = append(findings, newFinding(
+							"ai-docker-port-"+safeID(file+"-"+portMapping),
+							audit.CategoryAISecurity,
+							"Containerized AI stack with network-exposed port",
+							audit.StatusWarn,
+							audit.SeverityHigh,
+							fmt.Sprintf("file=%s port_mapping=%s; binds to all host interfaces by default", file, portMapping),
+							"Explicitly bind container ports to loopback, e.g. '127.0.0.1:11434:11434' instead of '11434:11434'.",
+							"",
+						))
+					}
+				}
+			}
+		}
+	}
+	return findings
+}
+
 func scanPromptInjectionArtifacts(cfg audit.RuntimeConfig) ([]audit.Finding, []audit.PromptArtifact) {
 	root := cfg.ProjectRoot
 	if root == "" {
@@ -685,17 +932,48 @@ func scanPromptInjectionArtifacts(cfg audit.RuntimeConfig) ([]audit.Finding, []a
 		maxBytes = 5
 	}
 	maxBytes *= 1024 * 1024
-	walkLimited(root, cfg.HomeDir, func(path string, d os.DirEntry) {
-		if d.IsDir() || !shouldScanPromptFile(path) {
-			return
+
+	if cfg.Deep {
+		walkLimited(root, cfg.HomeDir, func(path string, d os.DirEntry) {
+			if d.IsDir() || !shouldScanPromptFile(path) {
+				return
+			}
+			info, err := d.Info()
+			if err != nil || info.Size() > maxBytes {
+				return
+			}
+
+			// Check file permissions
+			if pf := checkRulesFilePermissions(path); pf != nil {
+				findings = append(findings, *pf)
+			}
+
+			fileArtifacts := scanPromptFile(path, maxBytes)
+			artifacts = append(artifacts, fileArtifacts...)
+		})
+	} else {
+		// Scan only key rules files in root even in fast mode
+		keyFiles := []string{
+			filepath.Join(root, ".cursorrules"),
+			filepath.Join(root, "CLAUDE.md"),
+			filepath.Join(root, "CLAUDE.local.md"),
+			filepath.Join(root, "AGENTS.md"),
+			filepath.Join(root, ".clinerules"),
+			filepath.Join(root, ".github", "copilot-instructions.md"),
 		}
-		info, err := d.Info()
-		if err != nil || info.Size() > maxBytes {
-			return
+		for _, kp := range keyFiles {
+			if info, err := os.Stat(kp); err == nil && !info.IsDir() && info.Size() <= maxBytes {
+				// Check file permissions
+				if pf := checkRulesFilePermissions(kp); pf != nil {
+					findings = append(findings, *pf)
+				}
+
+				fileArtifacts := scanPromptFile(kp, maxBytes)
+				artifacts = append(artifacts, fileArtifacts...)
+			}
 		}
-		fileArtifacts := scanPromptFile(path, maxBytes)
-		artifacts = append(artifacts, fileArtifacts...)
-	})
+	}
+
 	for _, artifact := range artifacts {
 		f := newFinding("ai-prompt-artifact-"+safeID(fmt.Sprintf("%s-%d-%s", artifact.Path, artifact.Line, artifact.Phrase)), audit.CategoryAISecurity, "Potential prompt-injection artifact", audit.StatusWarn, artifact.Severity, fmt.Sprintf("path=%s line=%d phrase=%q", artifact.Path, artifact.Line, artifact.Phrase), "This is not proof of compromise. Review instructions before using agent mode, especially in untrusted repositories.", "")
 		if containsNetworkTool(artifact.Phrase) {
@@ -739,6 +1017,7 @@ func scanPromptFile(path string, maxBytes int64) []audit.PromptArtifact {
 		"ignore previous instructions", "disregard previous instructions", "reveal your system prompt",
 		"send the contents of", "read ~/.ssh", "read .env", "exfiltrate", "curl", "wget",
 		"base64", "nc", "osascript", "launchctl", "chmod 777", "rm -rf", "upload to", "post to webhook",
+		"alter git history", "disable safeguards", "send to url", "persist this", "install packages",
 	}
 	scanner := bufio.NewScanner(io.LimitReader(file, maxBytes))
 	var artifacts []audit.PromptArtifact
@@ -749,7 +1028,7 @@ func scanPromptFile(path string, maxBytes int64) []audit.PromptArtifact {
 		for _, phrase := range phrases {
 			if strings.Contains(lower, phrase) {
 				severity := audit.SeverityLow
-				if phrase == "read ~/.ssh" || phrase == "read .env" || phrase == "exfiltrate" || phrase == "post to webhook" || phrase == "rm -rf" {
+				if phrase == "read ~/.ssh" || phrase == "read .env" || phrase == "exfiltrate" || phrase == "post to webhook" || phrase == "rm -rf" || phrase == "disable safeguards" || phrase == "alter git history" {
 					severity = audit.SeverityMedium
 				}
 				artifacts = append(artifacts, audit.PromptArtifact{Path: path, Line: lineNo, Phrase: phrase, Severity: severity})
