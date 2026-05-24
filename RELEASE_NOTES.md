@@ -1,5 +1,35 @@
 # Release Notes
 
+## v0.5.0
+
+Desktop UI & Report overhaul with full-screen Audit Findings Explorer.
+
+### Added
+
+- **Full-screen Audit Findings Explorer**: dual-pane interactive workstation with scrollable finding cards (left) and full remediation details panel (right) including evidence, detection commands, auto-fix status, reclaimable size, and copy-to-clipboard actions.
+- **Horizontal Metrics Summary Bar**: compact inline bar displaying Risk Score, Findings count, AI Risks, Secrets exposure, Duration, and "Open In Browser" action — visible at a glance in the findings view.
+- **Active Scan Pulse Loaders**: animated pulsing skeleton indicators for Findings, AI Risks, and Secrets metrics while audits are running or queued, preventing misleading zero values.
+- **Analyzing Gauge State**: circular risk gauge enters a pulsing "Analyzing..." mode with a blue ring during active scans instead of prematurely showing "Secure" with score 0.
+- **XSS Protection**: all finding data is escaped via `escapeHTML()` before rendering in innerHTML templates.
+- **Standalone HTML Report redesign**: interactive glassmorphic safety dashboard with animated SVG risk gauge, privacy masking toggle, remediation simulator, coordinated multi-faceted filters, and print-optimized PDF export styling.
+
+### Fixed
+
+- **Duration calculation bug**: Go's zero-value timestamps (`0001-01-01T00:00:00Z`) no longer produce `-63915244578.8s` — safely detected and rendered as `"-"` for queued jobs or live count-up for running jobs.
+- **Metrics display during active scans**: Findings, AI Risks, and Secrets no longer show misleading `0` while scan is in progress.
+
+### Changed
+
+- Version bumped to `v0.5.0`.
+- Desktop UI upgraded from basic table-based findings viewer to professional dual-pane security analysis workstation.
+- Wails desktop header badge updated to v0.5.0.
+- SECURITY.md supported versions updated (v0.5.x active, v0.4.x maintenance).
+
+### Known limitations
+
+- Wails UI remains in developer preview and requires Wails CLI framework installation to compile.
+- Cleanup operations remain CLI-only for safety.
+
 ## v0.4.0
 
 Wails Desktop Preview and Basic Windows Audit release.

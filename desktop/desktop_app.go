@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -102,10 +103,10 @@ func (a *App) StartAudit(cfgJson string) (string, error) {
 	jobID := now.UTC().Format("20060102-150405") + "-" + randomHex(4)
 
 	cfg := app.Config{
-		Version:       "v0.4.0",
+		Version:       "v0.5.0",
 		StartedAt:     now,
 		WantText:      input.WantText,
-		WantJSON:      input.WantJSON,
+		WantJSON:      true, // Always generate JSON internally for the desktop viewer
 		WantHTML:      input.WantHTML,
 		Deep:          input.Deep,
 		AIAudit:       input.AIAudit,
@@ -114,11 +115,6 @@ func (a *App) StartAudit(cfgJson string) (string, error) {
 		NoSudo:        input.NoSudo,
 		ProjectRoot:   input.ProjectRoot,
 		MaxFileSizeMB: input.MaxFileSizeMB,
-	}
-
-	if !cfg.WantText && !cfg.WantJSON && !cfg.WantHTML {
-		cfg.WantJSON = true
-		cfg.WantHTML = true
 	}
 
 	if input.OutputDir != "" {
@@ -275,6 +271,30 @@ func (a *App) OpenReport(path string) error {
 	}
 
 	return cmd.Start()
+}
+
+// GetReportJSON reads and returns the generated report.json file content.
+func (a *App) GetReportJSON(jobID string) (string, error) {
+	a.mu.Lock()
+	job, exists := a.jobs[jobID]
+	a.mu.Unlock()
+
+	if !exists {
+		return "", fmt.Errorf("job %s not found", jobID)
+	}
+
+	if job.status != "completed" {
+		return "", fmt.Errorf("job %s is not completed", jobID)
+	}
+
+	// The JSON report is written as report.json inside output_dir
+	jsonPath := filepath.Join(job.config.OutputDir, "report.json")
+	data, err := os.ReadFile(jsonPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read report file: %w", err)
+	}
+
+	return string(data), nil
 }
 
 func randomHex(bytesLen int) string {

@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [0.5.0] - 2026-05-24
+
+Desktop UI & Report overhaul with full-screen Audit Findings Explorer, runtime metrics fix, and standalone HTML report redesign.
+
+### Added
+- **Full-screen Audit Findings Explorer**: dual-pane interactive workstation with filterable finding cards and detailed remediation panel.
+- **Horizontal Metrics Summary Bar**: inline metrics strip with Risk Score, Findings, AI Risks, Secrets, Duration.
+- **Active Scan Pulse Loaders**: animated loading indicators replacing misleading zero metrics during running scans.
+- **Standalone HTML Report redesign**: interactive glassmorphic safety dashboard with SVG risk gauge, privacy masking, remediation simulator.
+- **XSS Protection**: `escapeHTML()` helper for all dynamically rendered finding data.
+
+### Fixed
+- **Duration bug**: Go zero-value timestamps no longer produce massive negative elapsed times (`-63915244578.8s`).
+- **Metrics bug**: Findings/AI Risks/Secrets no longer show `0` while audit is actively running.
+
+### Changed
+- Version bumped to `v0.5.0`.
+- SECURITY.md updated: v0.5.x active, v0.4.x maintenance.
+
+---
+
 ## [0.4.0] - 2026-05-24
 
 This release introduces native Windows security checks, basic Linux persistence checks, and the developer preview of our Wails desktop application dashboard.

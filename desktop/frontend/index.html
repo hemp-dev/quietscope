@@ -6,21 +6,30 @@
 <title>Quietscope Desktop Preview</title>
 <style>
 :root {
-  --bg: #111412;
-  --fg: #eef3ec;
-  --muted: #8ea092;
-  --panel: #181d19;
-  --panel-hover: #202720;
-  --line: #2e3b31;
-  --accent: #5cd0aa;
-  --accent-glow: rgba(92, 208, 170, 0.15);
-  --accent-2: #8ebcff;
-  --bad: #ff9488;
-  --ok: #7bd89f;
-  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  --bg: #090b0e;
+  --fg: #f1f5f9;
+  --muted: #94a3b8;
+  --panel: #11151c;
+  --panel-hover: #1b202b;
+  --line: #222936;
+  --border-focus: #10b981;
+  --accent: #10b981;
+  --accent-glow: rgba(16, 185, 129, 0.15);
+  --accent-2: #3b82f6;
+  --accent-2-glow: rgba(59, 130, 246, 0.15);
+  
+  --bad: #f43f5e;
+  --bad-glow: rgba(244, 63, 94, 0.15);
+  --warn: #f59e0b;
+  --warn-glow: rgba(245, 158, 11, 0.15);
+  --ok: #10b981;
+  --ok-glow: rgba(16, 185, 129, 0.15);
+  
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -28,25 +37,32 @@ body {
   font-family: var(--font);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
 }
 
 header {
   border-bottom: 1px solid var(--line);
   background: var(--panel);
-  padding: 16px 24px;
+  padding: 14px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 52px;
 }
 
-h1 {
-  font-size: 20px;
+header h1 {
+  font-size: 16px;
   margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--fg) 30%, var(--muted) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+header h1 svg {
+  color: var(--accent);
 }
 
 .notice {
@@ -56,14 +72,17 @@ h1 {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
+  font-weight: 600;
 }
 
 main {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: calc(100vh - 58px);
+  height: calc(100vh - 52px);
+  overflow: hidden;
 }
 
+/* Sidebar configuration styles */
 .sidebar {
   border-right: 1px solid var(--line);
   padding: 20px;
@@ -71,16 +90,29 @@ main {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: #141815;
+  background: #0d1015;
 }
 
 .panel-title {
-  font-size: 13px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: var(--muted);
   margin-bottom: 12px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-sub-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 12px;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
 }
 
 form {
@@ -96,8 +128,10 @@ form {
 }
 
 .form-group label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .form-group input[type="text"],
@@ -105,17 +139,17 @@ form {
   background: var(--panel);
   border: 1px solid var(--line);
   color: var(--fg);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 8px 12px;
   font-family: inherit;
   font-size: 13px;
-  transition: all 0.2s ease;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-group input[type="text"]:focus,
 .form-group input[type="number"]:focus {
-  outline: none;
-  border-color: var(--accent);
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
@@ -132,14 +166,17 @@ form {
   background: var(--panel);
   border: 1px solid var(--line);
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
+  font-weight: 600;
 }
 
 .checkbox-label:hover {
   background: var(--panel-hover);
+  border-color: var(--muted);
 }
 
 .checkbox-label input {
@@ -152,83 +189,98 @@ button {
   font-size: 13px;
   font-weight: 600;
   padding: 10px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--fg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 button.primary {
   background: var(--accent);
-  color: #0b2219;
-  border: none;
+  color: var(--bg);
+  border-color: var(--accent);
 }
 
 button.primary:hover {
-  background: #7ae4c1;
+  filter: brightness(1.1);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
 button.danger {
   color: var(--bad);
-  border-color: rgba(255, 148, 136, 0.2);
-  background: rgba(255, 148, 136, 0.05);
+  border-color: rgba(244, 63, 94, 0.2);
+  background: rgba(244, 63, 94, 0.05);
 }
 
-button.danger:hover {
-  background: rgba(255, 148, 136, 0.15);
+button.danger:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: var(--bad);
 }
 
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
+/* Workspace Panels styling */
 .workspace {
   display: grid;
-  grid-template-rows: 200px 1fr;
+  grid-template-rows: 180px 1fr;
   overflow: hidden;
+  height: 100%;
 }
 
 .runs-panel {
   border-bottom: 1px solid var(--line);
   overflow-y: auto;
-  padding: 16px;
+  padding: 16px 24px;
+  background: #0c0e12;
 }
 
 .runs-list {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 
 .run-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 14px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 220px;
+  position: relative;
+  overflow: hidden;
 }
 
 .run-item:hover {
   background: var(--panel-hover);
+  border-color: var(--muted);
 }
 
 .run-item.active {
   border-color: var(--accent);
   box-shadow: 0 0 10px var(--accent-glow);
+  background: var(--panel-hover);
 }
 
-.run-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.run-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent);
 }
 
 .run-id {
@@ -242,22 +294,29 @@ button:disabled {
   color: var(--muted);
 }
 
+.run-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
 .status-pill {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   text-transform: uppercase;
   padding: 2px 8px;
   border-radius: 999px;
   border: 1px solid currentColor;
 }
 
-.status-pill.completed { color: var(--ok); }
-.status-pill.running, .status-pill.queued { color: var(--accent-2); }
-.status-pill.failed, .status-pill.canceled { color: var(--bad); }
+.status-pill.completed { color: var(--ok); background: var(--ok-glow); }
+.status-pill.running, .status-pill.queued { color: var(--accent-2); background: var(--accent-2-glow); }
+.status-pill.failed, .status-pill.canceled { color: var(--bad); background: var(--bad-glow); }
 
 .detail-panel {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 340px 1fr;
   overflow: hidden;
   height: 100%;
 }
@@ -265,33 +324,108 @@ button:disabled {
 .detail-section {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   border-right: 1px solid var(--line);
-  padding: 20px;
+  padding: 24px;
+  gap: 20px;
 }
 
 .detail-section:last-child {
   border-right: none;
+  padding: 0;
 }
 
-.console {
-  background: #090b0a;
+/* Gauge Score widget */
+.gauge-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(127,127,127,0.02);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  font-family: monospace;
-  font-size: 12px;
-  color: #7bd89f;
-  white-space: pre-wrap;
+  padding: 16px;
+  border-radius: 12px;
+  gap: 12px;
+}
+
+.gauge-svg-holder {
+  position: relative;
+  width: 110px;
+  height: 110px;
+}
+
+.gauge-svg-holder svg {
+  transform: rotate(-90deg);
+}
+
+.gauge-svg-holder .bg-ring {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 8px;
+}
+
+.gauge-svg-holder .fill-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 8px;
+  stroke-linecap: round;
+  stroke-dasharray: 282.74;
+  stroke-dashoffset: 282.74;
+  transition: stroke-dashoffset 0.8s ease-out, stroke 0.3s;
+}
+
+@keyframes gauge-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.gauge-svg-holder.scanning {
+  animation: gauge-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.pulse-loader {
+  animation: pulse 1.5s infinite;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.gauge-inner-text {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.gauge-num {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.gauge-lbl {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.gauge-level-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  border-radius: 99px;
+  border: 1px solid currentColor;
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
 }
 
 .metric-card {
@@ -305,12 +439,27 @@ button:disabled {
 }
 
 .metric-card span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .metric-card b {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-lbl-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -320,7 +469,6 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: 20px;
 }
 
 .progress-bar {
@@ -330,34 +478,168 @@ button:disabled {
   transition: width 0.3s ease;
 }
 
+.terminal-header {
+  border-bottom: 1px solid var(--line);
+  background: #0a0d13;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.console {
+  background: #05070a;
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+  outline: none;
+}
+
+/* Console text coloring classes */
+.log-line {
+  display: block;
+  margin-bottom: 4px;
+  color: #a3b3c6;
+}
+
+.log-line.err { color: var(--bad); }
+.log-line.warn { color: var(--warn); }
+.log-line.ok { color: var(--ok); }
+.log-line.info { color: var(--accent-2); }
+.log-line.system { color: var(--muted); font-style: italic; }
+
 .empty-state {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
   color: var(--muted);
   font-size: 13px;
+  gap: 12px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn:hover:not(:disabled) {
+  color: var(--fg);
+}
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Badge styling for desktop findings */
+.badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 99px;
+  border: 1px solid currentColor;
+}
+.badge.critical, .badge.high, .badge.FAIL {
+  color: var(--bad);
+  background: rgba(244, 63, 94, 0.15);
+}
+.badge.medium, .badge.warn, .badge.WARN {
+  color: var(--warn);
+  background: rgba(245, 158, 11, 0.15);
+}
+.badge.low, .badge.info, .badge.INFO {
+  color: var(--accent-2);
+  background: rgba(59, 130, 246, 0.15);
+}
+.badge.pass, .badge.PASS {
+  color: var(--ok);
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.finding-card {
+  transition: all 0.2s ease;
+}
+.finding-card:hover {
+  background: var(--panel-hover) !important;
+  border-color: var(--muted) !important;
+}
+.finding-card.active {
+  border-color: var(--accent) !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Quietscope</h1>
-  <div class="notice">Developer Preview v0.4.0</div>
+  <h1>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    Quietscope
+  </h1>
+  <div class="notice">Developer Preview v0.5.0</div>
 </header>
 
 <main>
+  <!-- Sidebar panel config -->
   <div class="sidebar">
-    <div class="panel-title">Audit Configurations</div>
+    <div class="panel-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Audit Configurations
+    </div>
     <form id="config-form">
+      <div class="sidebar-sub-title" title="Scope parameters for filesystem audits">Scan Scope</div>
+      <div class="checkbox-grid" style="margin-bottom: 10px;">
+        <label class="checkbox-label" title="Deep Scan: Inspects actual file contents (e.g. prompt rules) rather than just system metadata"><input type="checkbox" id="deep"><span>Deep Scan</span></label>
+        <label class="checkbox-label" title="AI Audit: Analyzes local LLMs, MCP configurations, client/server ports, and security vectors"><input type="checkbox" id="ai-audit" checked><span>AI Audit</span></label>
+        <label class="checkbox-label" title="No Sudo: Skips checks requiring administrative privileges to ensure non-intrusive scanning"><input type="checkbox" id="no-sudo" checked><span>No Sudo</span></label>
+      </div>
+
+      <div class="sidebar-sub-title" title="Formats to export your scan report assets">Report Formats</div>
       <div class="checkbox-grid">
-        <label class="checkbox-label"><input type="checkbox" id="deep"><span>Deep</span></label>
-        <label class="checkbox-label"><input type="checkbox" id="ai-audit" checked><span>AI Audit</span></label>
-        <label class="checkbox-label"><input type="checkbox" id="no-sudo" checked><span>No Sudo</span></label>
-        <label class="checkbox-label"><input type="checkbox" id="want-html" checked><span>HTML</span></label>
-        <label class="checkbox-label"><input type="checkbox" id="want-json" checked><span>JSON</span></label>
-        <label class="checkbox-label"><input type="checkbox" id="want-text" checked><span>Text</span></label>
+        <label class="checkbox-label" title="HTML: Generates a self-contained offline security report dashboard"><input type="checkbox" id="want-html" checked><span>HTML</span></label>
+        <label class="checkbox-label" title="JSON: Generates structured, machine-readable audit report payload"><input type="checkbox" id="want-json" checked><span>JSON</span></label>
+        <label class="checkbox-label" title="Text: Generates a lightweight plain-text summary report"><input type="checkbox" id="want-text" checked><span>Text</span></label>
       </div>
 
       <div class="form-group">
@@ -367,7 +649,7 @@ button:disabled {
 
       <div class="form-group">
         <label for="project-root">Project Root (Deep Scan)</label>
-        <input type="text" id="project-root" placeholder="Optional project path">
+        <input type="text" id="project-root" placeholder="Optional directory path">
       </div>
 
       <div class="form-group">
@@ -375,20 +657,28 @@ button:disabled {
         <input type="number" id="max-file-size-mb" min="1" step="1" value="5">
       </div>
 
-      <button type="submit" class="primary">Start Defensive Audit</button>
+      <button type="submit" class="primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start Defensive Audit
+      </button>
     </form>
   </div>
 
+  <!-- Workspace Panels (Runs List & Log Output) -->
   <div class="workspace">
     <div class="runs-panel">
-      <div class="panel-title">Active / Past Audits</div>
+      <div class="panel-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Active / Past Audits
+      </div>
       <div class="runs-list" id="runs-list">
         <div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>
       </div>
     </div>
 
+    <!-- Active audit run details -->
     <div class="detail-panel" id="detail-panel">
-      <div class="empty-state" style="grid-column: span 2;">Select or start an audit from the runs list.</div>
+      <div class="empty-state" style="grid-column: span 2;">Select or start an audit from the list.</div>
     </div>
   </div>
 </main>
@@ -399,7 +689,316 @@ button:disabled {
 
   let state = {
     jobs: [],
-    selectedId: ""
+    selectedId: "",
+    scrollLock: false,
+    activeTab: "console",
+    reportData: null,
+    selectedFindingId: null,
+    lastSelectedFindingId: null,
+    lastSelectedId: null,
+    lastJobsJson: ""
+  };
+
+  const scrollPositions = {
+    runsListLeft: 0,
+    runsListTop: 0,
+    detailSecTop: 0,
+    consoleTop: 0,
+    findingsListTop: 0,
+    detailsScrollTop: 0
+  };
+
+  function saveScrollPositions() {
+    if (state.selectedId !== state.lastSelectedId) {
+      scrollPositions.detailSecTop = 0;
+      scrollPositions.consoleTop = 0;
+      scrollPositions.findingsListTop = 0;
+      scrollPositions.detailsScrollTop = 0;
+      state.lastSelectedId = state.selectedId;
+    }
+
+    // 1. Sidebar runs list
+    const runsList = document.getElementById("runs-list");
+    if (runsList) {
+      scrollPositions.runsListLeft = runsList.scrollLeft;
+      scrollPositions.runsListTop = runsList.scrollTop;
+    }
+    // 2. Detail section (left pane in summary)
+    const detailSec = document.querySelector(".detail-section");
+    if (detailSec) {
+      scrollPositions.detailSecTop = detailSec.scrollTop;
+    }
+    // 3. Console output
+    const consoleOutput = document.getElementById("console-output");
+    if (consoleOutput) {
+      scrollPositions.consoleTop = consoleOutput.scrollTop;
+    }
+    // 4. Report findings list
+    const findingsList = document.getElementById("report-findings-list");
+    if (findingsList) {
+      scrollPositions.findingsListTop = findingsList.scrollTop;
+    }
+    // 5. Finding details scroll container
+    if (state.selectedFindingId !== state.lastSelectedFindingId) {
+      scrollPositions.detailsScrollTop = 0;
+      state.lastSelectedFindingId = state.selectedFindingId;
+    } else {
+      const detailsScroll = document.getElementById("finding-details-scroll-container");
+      if (detailsScroll) {
+        scrollPositions.detailsScrollTop = detailsScroll.scrollTop;
+      }
+    }
+  }
+
+  function restoreScrollPositions() {
+    // 1. Sidebar runs list
+    const runsList = document.getElementById("runs-list");
+    if (runsList) {
+      runsList.scrollLeft = scrollPositions.runsListLeft;
+      runsList.scrollTop = scrollPositions.runsListTop;
+    }
+    // 2. Detail section
+    const detailSec = document.querySelector(".detail-section");
+    if (detailSec) {
+      detailSec.scrollTop = scrollPositions.detailSecTop;
+    }
+    // 3. Console output
+    const consoleOutput = document.getElementById("console-output");
+    if (consoleOutput) {
+      if (state.scrollLock) {
+        consoleOutput.scrollTop = scrollPositions.consoleTop;
+      } else {
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      }
+    }
+    // 4. Report findings list
+    const findingsList = document.getElementById("report-findings-list");
+    if (findingsList) {
+      findingsList.scrollTop = scrollPositions.findingsListTop;
+    }
+    // 5. Finding details scroll container
+    const detailsScroll = document.getElementById("finding-details-scroll-container");
+    if (detailsScroll) {
+      detailsScroll.scrollTop = scrollPositions.detailsScrollTop;
+    }
+  }
+
+  function escapeHTML(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KiB", "MiB", "GiB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  }
+
+  window.copyRemediation = function(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Remediation information copied to clipboard!"))
+        .catch(err => alert("Copy failed: " + err));
+    } else {
+      window.prompt("Copy Remediation Info:", text);
+    }
+  };
+
+  window.selectFinding = function(id) {
+    state.selectedFindingId = id;
+    const cards = document.querySelectorAll(".finding-card");
+    cards.forEach(card => {
+      if (card.getAttribute("data-id") === id) {
+        card.classList.add("active");
+      } else {
+        card.classList.remove("active");
+      }
+    });
+    
+    const detailsPane = document.getElementById("finding-details-pane");
+    if (!detailsPane || !state.reportData) return;
+    
+    const f = (state.reportData.findings || []).find(x => x.id === id);
+    if (!f) {
+      detailsPane.innerHTML = '<div class="empty-state">Select a finding from the list.</div>';
+      return;
+    }
+    
+    detailsPane.innerHTML = renderDetailsHTML(f);
+  };
+
+  function renderDetailsHTML(f) {
+    const isSafe = f.safe_to_auto_fix;
+    const severityBadge = `<span class="badge ${f.severity}">${f.severity}</span>`;
+    const statusBadge = `<span class="badge ${f.status}">${f.status}</span>`;
+    
+    const reclaimableText = f.estimated_size_bytes ? formatBytes(f.estimated_size_bytes) : "0 B (Diagnostic only)";
+    const autoFixText = isSafe ? "Yes (Safe to auto-fix)" : "No (Manual verification required)";
+    const autoFixColor = isSafe ? "var(--ok)" : "var(--warn)";
+    
+    const evidenceSection = f.evidence ? `
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Evidence & Analysis</span>
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto;">${escapeHTML(f.evidence)}</div>
+      </div>
+    ` : '';
+
+    const commandSection = f.command_checked ? `
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Detection Command</span>
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: var(--muted);">${escapeHTML(f.command_checked)}</div>
+      </div>
+    ` : '';
+
+    return `
+      <div style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.01);">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            ${severityBadge}
+            ${statusBadge}
+            <span style="font-size: 10px; color: var(--muted); margin-left: auto; font-family: monospace;">ID: ${escapeHTML(f.id)}</span>
+          </div>
+          <h2 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--fg); line-height: 1.4;">${escapeHTML(f.title)}</h2>
+          <div style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Category: ${escapeHTML(f.category)}</div>
+        </div>
+
+        <div id="finding-details-scroll-container" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+          ${evidenceSection}
+
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Remediation Recommendation</span>
+            <div style="background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 12px; font-size: 12px; color: var(--fg); line-height: 1.5;">${escapeHTML(f.recommendation || 'Verify manual remediation.')}</div>
+          </div>
+
+          ${commandSection}
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto; padding-top: 10px;">
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; text-transform: uppercase; color: var(--muted); font-weight: 700;">Auto-Fixable</span>
+              <span style="font-size: 11px; font-weight: 700; color: ${autoFixColor}">${autoFixText}</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; text-transform: uppercase; color: var(--muted); font-weight: 700;">Reclaimable Size</span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--fg);">${reclaimableText}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 12px 20px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.01); display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="primary" style="padding: 8px 14px; font-size: 11px;" onclick="window.copyRemediation('${escapeHTML(f.recommendation || f.title)}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy Remediation Info
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  window.toggleScrollLock = function(checked) {
+    state.scrollLock = checked;
+  };
+
+  window.switchTab = function(tabName) {
+    state.activeTab = tabName;
+    if (tabName === "report" && state.selectedId) {
+      if (window.go && window.go.main && window.go.main.App) {
+        window.go.main.App.GetReportJSON(state.selectedId)
+          .then(jsonStr => {
+            state.reportData = JSON.parse(jsonStr);
+            if (state.reportData && state.reportData.findings && state.reportData.findings.length > 0) {
+              state.selectedFindingId = state.reportData.findings[0].id;
+            } else {
+              state.selectedFindingId = null;
+            }
+            render();
+            
+            // Populate categories dynamically
+            const catSelect = document.getElementById("report-category");
+            if (catSelect) {
+              const cats = Array.from(new Set((state.reportData.findings || []).map(f => f.category).filter(Boolean))).sort();
+              while (catSelect.options.length > 1) { catSelect.remove(1); }
+              cats.forEach(c => {
+                const o = document.createElement("option");
+                o.value = c;
+                o.textContent = c;
+                catSelect.appendChild(o);
+              });
+            }
+            window.filterDesktopFindings();
+          })
+          .catch(err => {
+            console.error("Failed to load report:", err);
+            state.activeTab = "console";
+            render();
+            alert("Could not load report data: " + err);
+          });
+      }
+    } else {
+      render();
+    }
+  };
+
+  window.filterDesktopFindings = function() {
+    const q = document.getElementById("report-search") ? document.getElementById("report-search").value.toLowerCase() : "";
+    const sev = document.getElementById("report-severity") ? document.getElementById("report-severity").value : "";
+    const cat = document.getElementById("report-category") ? document.getElementById("report-category").value : "";
+
+    const listContainer = document.getElementById("report-findings-list");
+    if (!listContainer || !state.reportData) return;
+
+    const filtered = (state.reportData.findings || []).filter(f => {
+      const blob = JSON.stringify(f).toLowerCase();
+      if (q && !blob.includes(q)) return false;
+      if (sev && f.severity !== sev) return false;
+      if (cat && f.category !== cat) return false;
+      return true;
+    });
+
+    if (filtered.length > 0) {
+      if (!filtered.some(f => f.id === state.selectedFindingId)) {
+        state.selectedFindingId = filtered[0].id;
+      }
+    } else {
+      state.selectedFindingId = null;
+    }
+
+    if (!filtered.length) {
+      listContainer.innerHTML = '<div class="empty-state" style="padding: 20px; text-align: center;">No matching findings.</div>';
+      const detailsPane = document.getElementById("finding-details-pane");
+      if (detailsPane) {
+        detailsPane.innerHTML = '<div class="empty-state">No matching findings to analyze.</div>';
+      }
+      return;
+    }
+
+    listContainer.innerHTML = filtered.map(f => {
+      const cardActive = f.id === state.selectedFindingId ? "active" : "";
+      return `
+        <div class="finding-card ${cardActive}" onclick="window.selectFinding('${f.id}')" data-id="${f.id}" style="padding: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="badge ${f.severity}">${f.severity}</span>
+            <span class="badge ${f.status}" style="font-size: 8px; padding: 1px 4px;">${f.status}</span>
+          </div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHTML(f.title)}">${escapeHTML(f.title)}</div>
+          <div style="font-size: 10px; color: var(--muted); display: flex; justify-content: space-between;">
+            <span>${escapeHTML(f.category)}</span>
+            <span>${f.estimated_size_bytes ? 'Reclaimable' : ''}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const detailsPane = document.getElementById("finding-details-pane");
+    if (detailsPane) {
+      const selected = filtered.find(f => f.id === state.selectedFindingId);
+      if (selected) {
+        detailsPane.innerHTML = renderDetailsHTML(selected);
+      } else {
+        detailsPane.innerHTML = '<div class="empty-state">Select a finding from the list.</div>';
+      }
+    }
   };
 
   const runsList = document.getElementById("runs-list");
@@ -410,6 +1009,10 @@ button:disabled {
 
     window.go.main.App.GetJobs()
       .then(jsonStr => {
+        if (state.lastJobsJson === jsonStr) {
+          return;
+        }
+        state.lastJobsJson = jsonStr;
         state.jobs = JSON.parse(jsonStr) || [];
         render();
       })
@@ -419,14 +1022,19 @@ button:disabled {
   function formatTime(v) {
     if (!v || v.startsWith("0001-")) return "-";
     const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString();
+    return Number.isNaN(d.getTime()) ? "-" : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
   function getDuration(job) {
+    if (!job.started_at || job.started_at.startsWith("0001-")) return "-";
     const start = Date.parse(job.started_at);
-    const end = Date.parse(job.finished_at);
-    if (!start) return "-";
-    const ms = (end || Date.now()) - start;
+    if (Number.isNaN(start)) return "-";
+    
+    const end = job.finished_at && !job.finished_at.startsWith("0001-") ? Date.parse(job.finished_at) : Date.now();
+    if (Number.isNaN(end)) return "-";
+    
+    const ms = end - start;
+    if (ms < 0) return "0.0s";
     return (ms / 1000).toFixed(1) + "s";
   }
 
@@ -438,7 +1046,40 @@ button:disabled {
     return Math.round((latest.completed / latest.total) * 100);
   }
 
+  // Parse terminal logs dynamically to color code lines
+  function formatConsoleLog(events) {
+    if (!events || !events.length) return `<span class="log-line system">Waiting for execution progress events...</span>`;
+    
+    return events.map(ev => {
+      const prefix = ev.type ? `[${ev.type}] ` : "";
+      const check = ev.check_name ? `${ev.check_name} ` : "";
+      const progress = ev.total ? `(${ev.completed}/${ev.total}) ` : "";
+      const duration = ev.duration_ms ? ` (${ev.duration_ms}ms)` : "";
+      const err = ev.error ? ` [ERROR: ${ev.error}]` : "";
+      
+      const text = `${prefix}${progress}${check}${ev.message}${duration}${err}`;
+      
+      let styleClass = "log-line";
+      const normText = text.toLowerCase();
+      if (normText.includes("error") || normText.includes("fail")) {
+        styleClass += " err";
+      } else if (normText.includes("warn")) {
+        styleClass += " warn";
+      } else if (normText.includes("pass") || normText.includes("completed") || normText.includes("success")) {
+        styleClass += " ok";
+      } else if (normText.includes("info")) {
+        styleClass += " info";
+      } else if (normText.includes("system") || normText.includes("queued") || normText.includes("started")) {
+        styleClass += " system";
+      }
+      
+      return `<span class="${styleClass}">${text}</span>`;
+    }).join("");
+  }
+
   function render() {
+    saveScrollPositions();
+
     // 1. Render runs list
     if (!state.jobs.length) {
       runsList.innerHTML = '<div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>';
@@ -449,10 +1090,12 @@ button:disabled {
         return `
           <div class="run-item ${isActive}" onclick="selectJob('${job.id}')">
             <div class="run-info">
-              <span class="run-id">${job.id}</span>
+              <span class="run-id">${job.id.substring(job.id.length - 12)}</span>
               <span class="run-meta">${formatTime(job.created_at)} | Progress: ${pct}%</span>
             </div>
-            <span class="status-pill ${job.status}">${job.status}</span>
+            <div class="run-status-row">
+              <span class="status-pill ${job.status}">${job.status}</span>
+            </div>
           </div>
         `;
       }).join('');
@@ -461,77 +1104,212 @@ button:disabled {
     // 2. Render detail panel
     const job = state.jobs.find(j => j.id === state.selectedId) || state.jobs[0];
     if (!job) {
+      detailPanel.style.gridTemplateColumns = '1fr';
       detailPanel.innerHTML = '<div class="empty-state" style="grid-column: span 2;">Select or start an audit from the runs list.</div>';
       return;
     }
 
     state.selectedId = job.id;
+    const isReportTab = state.activeTab === 'report';
+    detailPanel.style.gridTemplateColumns = isReportTab ? '1fr' : '340px 1fr';
+
     const pct = getProgressPercentage(job);
     const isRunning = ["running", "queued"].includes(job.status);
     const hasReport = !!job.report_url;
 
-    const logText = (job.events || []).map(ev => {
-      const prefix = ev.type ? `[${ev.type}] ` : "";
-      const check = ev.check_name ? `${ev.check_name} ` : "";
-      const progress = ev.total ? `(${ev.completed}/${ev.total}) ` : "";
-      const duration = ev.duration_ms ? ` (${ev.duration_ms}ms)` : "";
-      const err = ev.error ? ` [ERROR: ${ev.error}]` : "";
-      return `${prefix}${progress}${check}${ev.message}${duration}${err}`;
-    }).join('\n') || "Waiting for execution progress events...";
+    // Circumference of r=45 circle is 2 * PI * 45 = 282.74
+    const score = (!isRunning && job.summary) ? Number(job.summary.overall_risk_score || 0) : 0;
+    const circleOffset = 282.74 - (282.74 * score) / 100;
+    
+    let badgeColor = "var(--ok)";
+    let riskLabel = "Secure";
+    if (isRunning) {
+      badgeColor = "var(--accent-2)";
+      riskLabel = job.status === "queued" ? "Queued" : "Analyzing...";
+    } else {
+      if (score > 70) {
+        badgeColor = "var(--bad)";
+        riskLabel = "Critical Risk";
+      } else if (score > 35) {
+        badgeColor = "var(--warn)";
+        riskLabel = "Medium Risk";
+      }
+    }
+
+    const showMetric = (val) => isRunning ? '<span class="pulse-loader">-</span>' : (val !== undefined && val !== null ? val : '-');
 
     detailPanel.innerHTML = `
-      <div class="detail-section">
-        <div class="panel-title">Audit Metrics & Controls</div>
+      ${!isReportTab ? `
+        <div class="detail-section">
+          <div class="panel-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Audit Summary & Metrics
+          </div>
+          
+          <!-- Score Circular Gauge -->
+          <div class="gauge-box">
+            <div class="gauge-svg-holder ${isRunning ? 'scanning' : ''}">
+              <svg width="110" height="110">
+                <circle cx="55" cy="55" r="45" class="bg-ring"></circle>
+                <circle cx="55" cy="55" r="45" class="fill-ring" id="risk-fill-circle" style="stroke-dashoffset: ${circleOffset}; stroke: ${badgeColor};"></circle>
+              </svg>
+              <div class="gauge-inner-text">
+                <span class="gauge-num">${isRunning ? '-' : score}</span>
+                <span class="gauge-lbl">/ 100</span>
+              </div>
+            </div>
+            <span class="gauge-level-badge" style="color: ${badgeColor}; border-color: ${badgeColor};">${riskLabel}</span>
+          </div>
+
+          <div class="progress-container">
+            <div class="progress-lbl-row">
+              <span>Audit Progress</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" style="width: ${pct}%"></div>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric-card">
+              <span>Findings</span>
+              <b>${showMetric(job.summary ? job.summary.total_findings : undefined)}</b>
+            </div>
+            <div class="metric-card">
+              <span>Duration</span>
+              <b>${getDuration(job)}</b>
+            </div>
+            <div class="metric-card">
+              <span>AI Risks</span>
+              <b>${showMetric(job.summary ? job.summary.ai_risk_count : undefined)}</b>
+            </div>
+            <div class="metric-card">
+              <span>Secrets</span>
+              <b>${showMetric(job.summary ? job.summary.secrets_exposure_count : undefined)}</b>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Target Workspace Output</label>
+            <div style="font-family: monospace; font-size: 11px; word-break: break-all; margin-top: 4px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted);">
+              ${job.output_dir}
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="danger" style="flex: 1;" onclick="cancelJob('${job.id}')" ${!isRunning ? 'disabled' : ''}>Cancel Run</button>
+            <button class="primary" style="flex: 1.5;" onclick="openReport('${job.report_url}')" ${!hasReport ? 'disabled' : ''}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open Report
+            </button>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Tabbed Workspace view (Console Log vs Report Findings) -->
+      <div class="console-container">
+        <div class="terminal-header">
+          <div style="display: flex; gap: 4px;">
+            <button class="tab-btn ${state.activeTab === 'console' ? 'active' : ''}" onclick="window.switchTab('console')">Console Log</button>
+            <button class="tab-btn ${state.activeTab === 'report' ? 'active' : ''}" onclick="window.switchTab('report')" ${job.status !== 'completed' ? 'disabled' : ''}>Audit Findings</button>
+          </div>
+          
+          ${state.activeTab === 'console' ? `
+            <label style="font-size: 10px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;" title="Pause auto-scrolling when new logs are received to comfortably read traces">
+              <input type="checkbox" id="scroll-lock-cb" style="margin: 0; accent-color: var(--accent);" ${state.scrollLock ? 'checked' : ''} onchange="window.toggleScrollLock(this.checked)">
+              Pause Scroll
+            </label>
+          ` : `
+            <span style="font-size: 10px; color: var(--muted); font-family: monospace;">Interactive Viewer</span>
+          `}
+        </div>
         
-        <div class="progress-bar-container">
-          <div class="progress-bar" style="width: ${pct}%"></div>
-        </div>
+        ${state.activeTab === 'console' ? `
+          <div class="console" id="console-output">${formatConsoleLog(job.events)}</div>
+        ` : `
+          <!-- Horizontal Summary Bar -->
+          <div class="findings-summary-bar" style="display: flex; gap: 20px; align-items: center; padding: 12px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin: 0 16px 16px 16px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Overall Risk Score</span>
+              <span style="font-size: 14px; font-weight: 800; color: ${badgeColor}">${score} / 100 (${riskLabel})</span>
+            </div>
+            <div style="width: 1px; height: 24px; background: var(--line);"></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Findings</span>
+              <span style="font-size: 14px; font-weight: 800;">${job.summary ? job.summary.total_findings : 0}</span>
+            </div>
+            <div style="width: 1px; height: 24px; background: var(--line);"></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 700;">AI Risks</span>
+              <span style="font-size: 14px; font-weight: 800; color: var(--accent-2);">${job.summary ? job.summary.ai_risk_count : 0}</span>
+            </div>
+            <div style="width: 1px; height: 24px; background: var(--line);"></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Secrets</span>
+              <span style="font-size: 14px; font-weight: 800; color: var(--bad);">${job.summary ? job.summary.secrets_exposure_count : 0}</span>
+            </div>
+            <div style="width: 1px; height: 24px; background: var(--line);"></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Duration</span>
+              <span style="font-size: 14px; font-weight: 800; color: var(--muted);">${getDuration(job)}</span>
+            </div>
+            
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+              <button class="primary" style="padding: 6px 12px; font-size: 11px;" onclick="openReport('${job.report_url}')" ${!hasReport ? 'disabled' : ''}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Open In Browser
+              </button>
+            </div>
+          </div>
 
-        <div class="metric-grid">
-          <div class="metric-card">
-            <span>Overall Risk Score</span>
-            <b style="color: ${job.summary ? (job.summary.overall_risk_score > 30 ? 'var(--bad)' : 'var(--ok)') : 'inherit'}">
-              ${job.summary ? job.summary.overall_risk_score + '/100' : '-'}
-            </b>
+          <!-- Dual-Pane Explorer -->
+          <div class="findings-explorer" style="display: grid; grid-template-columns: 360px 1fr; gap: 16px; flex: 1; overflow: hidden; padding: 0 16px 16px 16px;">
+            <!-- Left Column: Filters & Scrollable List -->
+            <div style="display: flex; flex-direction: column; gap: 12px; overflow: hidden; height: 100%;">
+              <div class="filter-toolbar" style="padding: 8px; display: flex; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;">
+                <input type="text" id="report-search" placeholder="Search findings..." style="background: var(--bg); border: 1px solid var(--line); color: var(--fg); padding: 6px 10px; border-radius: 6px; font-size: 11px; outline: none;" oninput="window.filterDesktopFindings()">
+                <div style="display: flex; gap: 6px;">
+                  <select id="report-severity" style="flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); color: var(--fg); padding: 5px; border-radius: 6px; font-size: 10px; outline: none;" onchange="window.filterDesktopFindings()">
+                    <option value="">All Severities</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                    <option value="info">Info</option>
+                  </select>
+                  <select id="report-category" style="flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); color: var(--fg); padding: 5px; border-radius: 6px; font-size: 10px; outline: none;" onchange="window.filterDesktopFindings()">
+                    <option value="">All Categories</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #07090d;" id="report-findings-list">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+            
+            <!-- Right Column: Details Card -->
+            <div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; height: 100%;" id="finding-details-pane">
+              <div class="empty-state">Select a finding from the list to view full analysis and remediation actions.</div>
+            </div>
           </div>
-          <div class="metric-card">
-            <span>Risk Level</span>
-            <b>${job.summary ? job.summary.risk_level : '-'}</b>
-          </div>
-          <div class="metric-card">
-            <span>Findings</span>
-            <b>${job.summary ? job.summary.total_findings : '-'}</b>
-          </div>
-          <div class="metric-card">
-            <span>Duration</span>
-            <b>${getDuration(job)}</b>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Output Directory</label>
-          <div style="font-family: monospace; font-size: 12px; word-break: break-all; margin-top: 4px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--line);">
-            ${job.output_dir}
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 12px;">
-          <button class="danger" onclick="cancelJob('${job.id}')" ${!isRunning ? 'disabled' : ''}>Cancel Audit</button>
-          <button class="primary" onclick="openReport('${job.report_url}')" ${!hasReport ? 'disabled' : ''}>Open HTML Report</button>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <div class="panel-title">Streamed Console Output</div>
-        <div class="console" id="console-output">${logText}</div>
+        `}
       </div>
     `;
 
-    // Scroll console to bottom if showing logs
-    const consoleDiv = document.getElementById("console-output");
-    if (consoleDiv) {
-      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    // Scroll console to bottom if showing logs and scroll lock is not active
+    if (state.activeTab === 'console') {
+      const consoleDiv = document.getElementById("console-output");
+      if (consoleDiv && !state.scrollLock) {
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+      }
+    } else {
+      // Re-populate and render findings table if we are returning to this view
+      window.filterDesktopFindings();
     }
+
+    restoreScrollPositions();
   }
 
   window.selectJob = function(id) {
@@ -581,7 +1359,7 @@ button:disabled {
     refreshJobs();
     setInterval(refreshJobs, 1000);
 
-    // If running inside Wails, listen to Wails events for immediate reactivity!
+    // Listen to Wails events for reactive live reloading!
     if (window.runtime) {
       window.runtime.EventsOn("job_added", () => refreshJobs());
       window.runtime.EventsOn("job_started", () => refreshJobs());

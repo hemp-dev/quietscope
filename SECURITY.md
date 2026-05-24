@@ -8,7 +8,8 @@ We actively support and provide security patches for the following versions of `
 
 | Version | Supported |
 | :--- | :--- |
-| v0.4.x | Yes (Active) |
+| v0.5.x | Yes (Active) |
+| v0.4.x | Maintenance |
 | < v0.4.0 | No |
 
 ---
