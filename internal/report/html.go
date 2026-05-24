@@ -319,6 +319,17 @@ button.btn.secondary:hover {
   background: var(--panel-hover);
 }
 
+button.btn.danger {
+  background: var(--panel);
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+button.btn.danger:hover {
+  background: var(--bad-glow);
+}
+
+
 /* Dashboard summary and layout */
 section {
   margin-bottom: 48px;
@@ -915,6 +926,10 @@ details.evidence-box pre {
         <p class="sub">Defensive user-space analysis. No external APIs, uploads, or trackers.</p>
       </div>
       <div class="header-actions">
+        <button id="delete-report" type="button" class="btn danger" style="display: none;" title="Delete this report and its files from disk">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+          Delete Report
+        </button>
         <button id="copy" type="button" class="btn secondary" title="Copy clean summary block to clipboard">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Copy Summary
@@ -2005,6 +2020,47 @@ details.evidence-box pre {
     document.querySelectorAll(".nav-link").forEach(a => a.classList.remove("active"));
     target.classList.add("active");
   };
+
+  // Delete Report Integration
+  (function() {
+    const deleteBtn = document.getElementById("delete-report");
+    if (!deleteBtn) return;
+
+    // Check if we are served from local server over http/https
+    const isLocalServer = window.location.protocol === "http:" || window.location.protocol === "https:";
+    if (!isLocalServer) return;
+
+    const match = window.location.pathname.match(/\/reports\/([^\/]+)\//);
+    if (!match) return;
+
+    const jobId = match[1];
+    const token = sessionStorage.getItem("quietscope_ui_token");
+    if (!token) return;
+
+    // Show delete button
+    deleteBtn.style.display = "inline-flex";
+    deleteBtn.addEventListener("click", async () => {
+      if (!window.confirm("Are you sure you want to delete this report and its files from disk?")) return;
+      try {
+        const res = await fetch("/api/audits/" + encodeURIComponent(jobId), {
+          method: "DELETE",
+          headers: {
+            "X-Audit-Token": token
+          }
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          window.alert("Failed to delete report: " + text);
+          return;
+        }
+        window.alert("Report deleted successfully.");
+        // Redirect back to dashboard
+        window.location.href = "/";
+      } catch (err) {
+        window.alert("Error deleting report: " + err);
+      }
+    });
+  })();
 
   // Initial trigger
   renderAll();

@@ -199,16 +199,37 @@ func (s *auditUIServer) handleAudits(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *auditUIServer) handleAudit(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/audits/")
-	if id == "" || strings.Contains(id, "/") {
+	trimmed := strings.TrimPrefix(r.URL.Path, "/api/audits/")
+	parts := strings.Split(trimmed, "/")
+	if len(parts) == 0 || parts[0] == "" {
 		http.NotFound(w, r)
 		return
 	}
+	id := parts[0]
 	job := s.job(id)
 	if job == nil {
 		http.NotFound(w, r)
 		return
 	}
+
+	if len(parts) == 2 && parts[1] == "cancel" {
+		if r.Method != http.MethodPost {
+			methodNotAllowed(w)
+			return
+		}
+		if !s.requireToken(w, r) {
+			return
+		}
+		job.requestCancel()
+		writeJSONResponse(w, http.StatusOK, job.snapshot())
+		return
+	}
+
+	if len(parts) > 1 {
+		http.NotFound(w, r)
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		writeJSONResponse(w, http.StatusOK, job.snapshot())
@@ -217,7 +238,24 @@ func (s *auditUIServer) handleAudit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		job.requestCancel()
-		writeJSONResponse(w, http.StatusOK, job.snapshot())
+
+		snapshot := job.snapshot()
+		if snapshot.OutputDir != "" {
+			safeDeleteOutputDir(snapshot.OutputDir)
+		}
+
+		s.mu.Lock()
+		delete(s.jobs, id)
+		newOrder := make([]string, 0, len(s.order))
+		for _, oid := range s.order {
+			if oid != id {
+				newOrder = append(newOrder, oid)
+			}
+		}
+		s.order = newOrder
+		s.mu.Unlock()
+
+		writeJSONResponse(w, http.StatusOK, map[string]string{"status": "deleted"})
 	default:
 		methodNotAllowed(w)
 	}
@@ -454,3 +492,15 @@ func randomHex(bytesLen int) string {
 	}
 	return hex.EncodeToString(b)
 }
+
+func safeDeleteOutputDir(outputDir string) {
+	if outputDir == "" {
+		return
+	}
+	files := []string{"report.txt", "report.json", "report.html"}
+	for _, f := range files {
+		_ = os.Remove(filepath.Join(outputDir, f))
+	}
+	_ = os.Remove(outputDir)
+}
+

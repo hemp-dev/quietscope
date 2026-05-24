@@ -114,6 +114,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 (function(){
   "use strict";
   const token = "{{.Token}}";
+  sessionStorage.setItem("quietscope_ui_token", token);
   const state = { jobs: [], selected: "" };
   const $ = (id) => document.getElementById(id);
   function text(v){ return v === null || v === undefined || v === "" ? "-" : String(v); }
@@ -190,7 +191,10 @@ button:disabled{opacity:.55;cursor:not-allowed}
     const report = document.createElement("button"); report.type = "button"; report.textContent = "Open Report";
     report.disabled = !job.report_url;
     report.addEventListener("click",()=>{ if(job.report_url) window.open(job.report_url, "_blank", "noopener"); });
-    actions.append(cancel,report);
+    const del = document.createElement("button"); del.type = "button"; del.className = "danger"; del.textContent = "Delete";
+    del.disabled = ["running","queued","canceling"].includes(job.status);
+    del.addEventListener("click",()=>deleteJob(job.id));
+    actions.append(cancel,report,del);
     const meta = document.createElement("div"); meta.className = "meta";
     [["Started",time(job.started_at)],["Duration",duration(job)],["Output",job.output_dir],["Risk",job.summary ? job.summary.risk_level : "-"],["Findings",job.summary ? job.summary.total_findings : "-"],["Error",job.error || "-"]].forEach(([k,v])=>{
       const d=document.createElement("div"); const s=document.createElement("span"); s.textContent=k; const b=document.createElement("b"); b.textContent=text(v); d.append(s,b); meta.appendChild(d);
@@ -226,8 +230,17 @@ button:disabled{opacity:.55;cursor:not-allowed}
     await refresh();
   }
   async function cancelJob(id){
+    const res = await fetch("/api/audits/" + encodeURIComponent(id) + "/cancel", {method:"POST", headers:{"X-Audit-Token":token}});
+    if(!res.ok){ window.alert(await res.text()); return; }
+    await refresh();
+  }
+  async function deleteJob(id){
+    if(!window.confirm("Are you sure you want to delete this run and its report files from disk?")) return;
     const res = await fetch("/api/audits/" + encodeURIComponent(id), {method:"DELETE", headers:{"X-Audit-Token":token}});
     if(!res.ok){ window.alert(await res.text()); return; }
+    if(state.selected === id) {
+      state.selected = "";
+    }
     await refresh();
   }
   $("audit-form").addEventListener("submit", startAudit);
