@@ -1,0 +1,17 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "quietscope",
+  "version": "v0.3.0",
+  "outputfilename": "quietscope",
+  "frontend:dir": "frontend",
+  "author": {
+    "name": "projectauthors",
+    "email": "info@projectauthors.local"
+  },
+  "info": {
+    "companyName": "projectauthors",
+    "productName": "quietscope",
+    "productVersion": "v0.3.0",
+    "copyright": "Copyright 2026 projectauthors"
+  }
+}

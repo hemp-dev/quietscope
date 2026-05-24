@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quietscope Desktop Preview</title>
+<style>
+:root {
+  --bg: #111412;
+  --fg: #eef3ec;
+  --muted: #8ea092;
+  --panel: #181d19;
+  --panel-hover: #202720;
+  --line: #2e3b31;
+  --accent: #5cd0aa;
+  --accent-glow: rgba(92, 208, 170, 0.15);
+  --accent-2: #8ebcff;
+  --bad: #ff9488;
+  --ok: #7bd89f;
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+header {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--fg) 30%, var(--muted) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.notice {
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 58px);
+}
+
+.sidebar {
+  border-right: 1px solid var(--line);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #141815;
+}
+
+.panel-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"] {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checkbox-label:hover {
+  background: var(--panel-hover);
+}
+
+.checkbox-label input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+}
+
+button.primary {
+  background: var(--accent);
+  color: #0b2219;
+  border: none;
+}
+
+button.primary:hover {
+  background: #7ae4c1;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+button.danger {
+  color: var(--bad);
+  border-color: rgba(255, 148, 136, 0.2);
+  background: rgba(255, 148, 136, 0.05);
+}
+
+button.danger:hover {
+  background: rgba(255, 148, 136, 0.15);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: 200px 1fr;
+  overflow: hidden;
+}
+
+.runs-panel {
+  border-bottom: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.runs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.run-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.run-item:hover {
+  background: var(--panel-hover);
+}
+
+.run-item.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.run-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.run-id {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.run-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.status-pill.completed { color: var(--ok); }
+.status-pill.running, .status-pill.queued { color: var(--accent-2); }
+.status-pill.failed, .status-pill.canceled { color: var(--bad); }
+
+.detail-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  height: 100%;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  padding: 20px;
+}
+
+.detail-section:last-child {
+  border-right: none;
+}
+
+.console {
+  background: #090b0a;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #7bd89f;
+  white-space: pre-wrap;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.metric-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-card span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.metric-card b {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: #090b0a;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.3s ease;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quietscope</h1>
+  <div class="notice">Developer Preview v0.3.0</div>
+</header>
+
+<main>
+  <div class="sidebar">
+    <div class="panel-title">Audit Configurations</div>
+    <form id="config-form">
+      <div class="checkbox-grid">
+        <label class="checkbox-label"><input type="checkbox" id="deep"><span>Deep</span></label>
+        <label class="checkbox-label"><input type="checkbox" id="ai-audit" checked><span>AI Audit</span></label>
+        <label class="checkbox-label"><input type="checkbox" id="no-sudo" checked><span>No Sudo</span></label>
+        <label class="checkbox-label"><input type="checkbox" id="want-html" checked><span>HTML</span></label>
+        <label class="checkbox-label"><input type="checkbox" id="want-json" checked><span>JSON</span></label>
+        <label class="checkbox-label"><input type="checkbox" id="want-text" checked><span>Text</span></label>
+      </div>
+
+      <div class="form-group">
+        <label for="output-dir">Output Directory</label>
+        <input type="text" id="output-dir" placeholder="Default Desktop folder">
+      </div>
+
+      <div class="form-group">
+        <label for="project-root">Project Root (Deep Scan)</label>
+        <input type="text" id="project-root" placeholder="Optional project path">
+      </div>
+
+      <div class="form-group">
+        <label for="max-file-size-mb">Max File Size (MiB)</label>
+        <input type="number" id="max-file-size-mb" min="1" step="1" value="5">
+      </div>
+
+      <button type="submit" class="primary">Start Defensive Audit</button>
+    </form>
+  </div>
+
+  <div class="workspace">
+    <div class="runs-panel">
+      <div class="panel-title">Active / Past Audits</div>
+      <div class="runs-list" id="runs-list">
+        <div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>
+      </div>
+    </div>
+
+    <div class="detail-panel" id="detail-panel">
+      <div class="empty-state" style="grid-column: span 2;">Select or start an audit from the runs list.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  "use strict";
+
+  let state = {
+    jobs: [],
+    selectedId: ""
+  };
+
+  const runsList = document.getElementById("runs-list");
+  const detailPanel = document.getElementById("detail-panel");
+
+  function refreshJobs() {
+    if (!window.go || !window.go.main || !window.go.main.App) return;
+
+    window.go.main.App.GetJobs()
+      .then(jsonStr => {
+        state.jobs = JSON.parse(jsonStr) || [];
+        render();
+      })
+      .catch(err => console.error("Failed to load jobs:", err));
+  }
+
+  function formatTime(v) {
+    if (!v || v.startsWith("0001-")) return "-";
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString();
+  }
+
+  function getDuration(job) {
+    const start = Date.parse(job.started_at);
+    const end = Date.parse(job.finished_at);
+    if (!start) return "-";
+    const ms = (end || Date.now()) - start;
+    return (ms / 1000).toFixed(1) + "s";
+  }
+
+  function getProgressPercentage(job) {
+    if (job.status === "completed") return 100;
+    if (!job.events || !job.events.length) return 0;
+    const latest = job.events[job.events.length - 1];
+    if (!latest.total) return 0;
+    return Math.round((latest.completed / latest.total) * 100);
+  }
+
+  function render() {
+    // 1. Render runs list
+    if (!state.jobs.length) {
+      runsList.innerHTML = '<div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>';
+    } else {
+      runsList.innerHTML = state.jobs.map(job => {
+        const pct = getProgressPercentage(job);
+        const isActive = job.id === state.selectedId ? "active" : "";
+        return `
+          <div class="run-item ${isActive}" onclick="selectJob('${job.id}')">
+            <div class="run-info">
+              <span class="run-id">${job.id}</span>
+              <span class="run-meta">${formatTime(job.created_at)} | Progress: ${pct}%</span>
+            </div>
+            <span class="status-pill ${job.status}">${job.status}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 2. Render detail panel
+    const job = state.jobs.find(j => j.id === state.selectedId) || state.jobs[0];
+    if (!job) {
+      detailPanel.innerHTML = '<div class="empty-state" style="grid-column: span 2;">Select or start an audit from the runs list.</div>';
+      return;
+    }
+
+    state.selectedId = job.id;
+    const pct = getProgressPercentage(job);
+    const isRunning = ["running", "queued"].includes(job.status);
+    const hasReport = !!job.report_url;
+
+    const logText = (job.events || []).map(ev => {
+      const prefix = ev.type ? `[${ev.type}] ` : "";
+      const check = ev.check_name ? `${ev.check_name} ` : "";
+      const progress = ev.total ? `(${ev.completed}/${ev.total}) ` : "";
+      const duration = ev.duration_ms ? ` (${ev.duration_ms}ms)` : "";
+      const err = ev.error ? ` [ERROR: ${ev.error}]` : "";
+      return `${prefix}${progress}${check}${ev.message}${duration}${err}`;
+    }).join('\n') || "Waiting for execution progress events...";
+
+    detailPanel.innerHTML = `
+      <div class="detail-section">
+        <div class="panel-title">Audit Metrics & Controls</div>
+        
+        <div class="progress-bar-container">
+          <div class="progress-bar" style="width: ${pct}%"></div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <span>Overall Risk Score</span>
+            <b style="color: ${job.summary ? (job.summary.overall_risk_score > 30 ? 'var(--bad)' : 'var(--ok)') : 'inherit'}">
+              ${job.summary ? job.summary.overall_risk_score + '/100' : '-'}
+            </b>
+          </div>
+          <div class="metric-card">
+            <span>Risk Level</span>
+            <b>${job.summary ? job.summary.risk_level : '-'}</b>
+          </div>
+          <div class="metric-card">
+            <span>Findings</span>
+            <b>${job.summary ? job.summary.total_findings : '-'}</b>
+          </div>
+          <div class="metric-card">
+            <span>Duration</span>
+            <b>${getDuration(job)}</b>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Output Directory</label>
+          <div style="font-family: monospace; font-size: 12px; word-break: break-all; margin-top: 4px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--line);">
+            ${job.output_dir}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button class="danger" onclick="cancelJob('${job.id}')" ${!isRunning ? 'disabled' : ''}>Cancel Audit</button>
+          <button class="primary" onclick="openReport('${job.report_url}')" ${!hasReport ? 'disabled' : ''}>Open HTML Report</button>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="panel-title">Streamed Console Output</div>
+        <div class="console" id="console-output">${logText}</div>
+      </div>
+    `;
+
+    // Scroll console to bottom if showing logs
+    const consoleDiv = document.getElementById("console-output");
+    if (consoleDiv) {
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+  }
+
+  window.selectJob = function(id) {
+    state.selectedId = id;
+    render();
+  };
+
+  window.cancelJob = function(id) {
+    if (!window.go || !window.go.main || !window.go.main.App) return;
+    window.go.main.App.CancelAudit(id)
+      .then(() => refreshJobs())
+      .catch(err => alert("Cancel failed: " + err));
+  };
+
+  window.openReport = function(url) {
+    if (!window.go || !window.go.main || !window.go.main.App) return;
+    window.go.main.App.OpenReport(url)
+      .catch(err => alert("Could not open report: " + err));
+  };
+
+  document.getElementById("config-form").addEventListener("submit", function(evt) {
+    evt.preventDefault();
+    if (!window.go || !window.go.main || !window.go.main.App) return;
+
+    const payload = {
+      want_text: document.getElementById("want-text").checked,
+      want_json: document.getElementById("want-json").checked,
+      want_html: document.getElementById("want-html").checked,
+      deep: document.getElementById("deep").checked,
+      ai_audit: document.getElementById("ai-audit").checked,
+      no_sudo: document.getElementById("no-sudo").checked,
+      output_dir: document.getElementById("output-dir").value.trim(),
+      project_root: document.getElementById("project-root").value.trim(),
+      max_file_size_mb: parseInt(document.getElementById("max-file-size-mb").value) || 5
+    };
+
+    window.go.main.App.StartAudit(JSON.stringify(payload))
+      .then(jobId => {
+        state.selectedId = jobId;
+        refreshJobs();
+      })
+      .catch(err => alert("Start Audit failed: " + err));
+  });
+
+  // Wails runtime bindings
+  document.addEventListener("DOMContentLoaded", () => {
+    refreshJobs();
+    setInterval(refreshJobs, 1000);
+
+    // If running inside Wails, listen to Wails events for immediate reactivity!
+    if (window.runtime) {
+      window.runtime.EventsOn("job_added", () => refreshJobs());
+      window.runtime.EventsOn("job_started", () => refreshJobs());
+      window.runtime.EventsOn("job_finished", () => refreshJobs());
+      window.runtime.EventsOn("job_canceling", () => refreshJobs());
+    }
+  });
+})();
+</script>
+</body>
+</html>

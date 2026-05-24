@@ -79,6 +79,16 @@ func Run(ctx context.Context, cfg Config, opts RunOptions) (audit.Report, error)
 			}},
 		)
 	}
+	if platform.IsWindows() {
+		registeredChecks = append(registeredChecks,
+			audit.NamedCheck{Name: "windows_persistence", Run: func(ctx context.Context) (audit.CheckResult, error) {
+				return checks.RunWindowsPersistence(ctx, runtimeCfg, runner)
+			}},
+			audit.NamedCheck{Name: "windows_security", Run: func(ctx context.Context) (audit.CheckResult, error) {
+				return checks.RunWindowsSecurity(ctx, runtimeCfg, runner)
+			}},
+		)
+	}
 	if cfg.AIAudit {
 		registeredChecks = append(registeredChecks,
 			audit.NamedCheck{Name: "ai_security", Run: func(ctx context.Context) (audit.CheckResult, error) {

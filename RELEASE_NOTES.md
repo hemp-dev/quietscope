@@ -1,5 +1,29 @@
 # Release Notes
 
+## v0.4.0
+
+Wails Desktop Preview and Basic Windows Audit release.
+
+### Added
+
+- Wails desktop frontend scaffolding under `desktop/` providing a native window wrapper around Quietscope audit engine.
+- Real-time progress and logs streaming from Go core to Wails UI via Wails Events bus.
+- Basic Windows audit module with persistence checks for User/System Startup folders, registry Run keys, and User PowerShell profiles.
+- Basic Windows security checks including SSH file permissions, Windows Defender status, Firewall profiles status, and User Account Control (UAC) EnableLUA status.
+- Integration tests and mock fixtures for Windows checks validation.
+
+### Changed
+
+- Version bumped to `v0.4.0`.
+- README updated to reflect Wails developer preview availability and new basic Windows support levels.
+- CLI main registry gates now load Windows audit modules on Windows hosts.
+
+### Known limitations
+
+- Wails UI is in active developer preview and requires Wails CLI framework installation to compile.
+- UI does not support destructive cache cleanup operations (kept CLI-only for safety).
+- Windows checks are read-only and metadata-first; they do not cover active malware removal or deep registry hardening.
+
 ## v0.3.0
 
 Initial Linux audit module release.

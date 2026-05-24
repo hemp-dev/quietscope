@@ -1,8 +1,8 @@
 # quietscope
 
-Version: `v0.3.0`
+Version: `v0.4.0`
 
-Privacy-first local audit dashboard for security, storage hygiene, and AI-agent risk surface. macOS is the primary supported audit platform; Linux has an initial audit module; Windows remains soft-supported for common checks and report generation.
+Privacy-first local audit dashboard for security, storage hygiene, and AI-agent risk surface. macOS is the primary supported audit platform; Linux has an initial audit module; Windows is supported with basic security and persistence audit checks. Version `v0.4.0` also introduces a developer preview of our Wails-based desktop application.
 
 This tool is for defensive local auditing only. It does not exploit vulnerabilities, exfiltrate data, or modify system settings. Review all findings before taking action.
 
@@ -50,7 +50,7 @@ Filesystem scanning uses explicit exclusions for Keychains, browser profiles, Ph
 | --- | --- | --- |
 | macOS | Supported audit platform | Full audit surface: system metadata, security settings, launchd persistence, permissions, storage, cleanup dry-run, AI/MCP inventory, and reports. |
 | Linux | Initial audit platform | Builds and runs. Includes common filesystem, SSH, shell startup, secret metadata, project, AI/MCP, storage, cleanup dry-run, reports, plus initial Linux systemd/cron/autostart/firewall/update/sudoers metadata checks. macOS-only checks are reported as `SKIPPED`. |
-| Windows | Soft-supported | Builds and runs. Common metadata and AI/MCP/report checks are best-effort. UID/GID ownership fields are unavailable and reported as `0`. macOS-only checks are reported as `SKIPPED`. Windows audit modules are planned later. |
+| Windows | Basic audit support | Builds and runs. Common metadata, report, and AI/MCP checks are supported, along with basic Windows-specific security settings (Defender, Firewall, UAC) and startup persistence checks (Startup folders, Registry Run keys, PowerShell profiles). UID/GID ownership fields are unavailable and reported as `0`. macOS-only checks are reported as `SKIPPED`. |
 
 Soft-supported means the binary should build and run, common checks should produce reports, and unsupported OS-specific checks should be visible as skipped or unavailable rather than treated as failures. The Linux audit module is still conservative and metadata-first; it does not claim full distribution-specific hardening coverage.
 
@@ -279,9 +279,10 @@ See `SECURITY.md`. Please do not include secrets or private report contents in p
 
 ## Roadmap
 
-- v0.4 Wails desktop preview while preserving the CLI as the primary stable interface.
+- Wails desktop preview is available under `desktop/` as a developer preview wrapper around the Go core.
+- Basic Windows security and persistence audit checks (Defender, Firewall, UAC, Startup folders, Registry Run keys, PowerShell profiles) are integrated in version `v0.4.0`.
 - Broader Linux audit coverage for distro-specific package-manager, service, and desktop security posture.
-- Platform-specific security modules for Windows startup persistence, Defender/Firewall posture, scheduled tasks, services, package managers, and desktop/AI tooling.
+- Extended Windows audit capabilities (scheduled tasks, services, package managers, and desktop/AI tooling).
 - Optional high-assurance Rust helper components for parsing complex binary formats.
 - Richer TCC analysis using explicit user consent and local-only parsing.
 - More MCP schema variants and package pinning heuristics.
