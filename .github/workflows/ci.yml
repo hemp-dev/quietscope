@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - name: Verify formatting
+        run: |
+          UNFORMATTED=$(gofmt -l $(find . -name "*.go" -not -path "./vendor/*"))
+          if [ -n "$UNFORMATTED" ]; then
+            echo "The following files are not formatted correctly. Please run 'go fmt ./...':"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+      - name: Golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59
+
+  test:
+    name: Go tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - run: test -f README.md && test -f SECURITY.md && test -f LICENSE
+        shell: bash
+      - run: go test ./...
+      - run: go build ./cmd/quietscope
+
+  cross-compile:
+    name: Cross-compile release targets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { goos: darwin, goarch: arm64, output: quietscope_darwin_arm64 }
+          - { goos: darwin, goarch: amd64, output: quietscope_darwin_amd64 }
+          - { goos: linux, goarch: amd64, output: quietscope_linux_amd64 }
+          - { goos: windows, goarch: amd64, output: quietscope_windows_amd64.exe }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - run: go test ./...
+      - run: mkdir -p dist
+        shell: bash
+      - run: go build -o dist/${{ matrix.target.output }} ./cmd/quietscope
+        env:
+          GOOS: ${{ matrix.target.goos }}
+          GOARCH: ${{ matrix.target.goarch }}
+
+  smoke-macos:
+    name: Smoke test on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - run: sh tests/smoke_test.sh
+
+  smoke-linux:
+    name: Smoke test on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - run: sh tests/linux_smoke_test.sh

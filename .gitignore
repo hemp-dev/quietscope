@@ -1,0 +1,40 @@
+# Build artifacts
+/quietscope
+dist/
+build/
+*.test
+*.out
+
+# Local reports and temporary output
+quietscope-audit-*/
+reports/
+tmp/
+*.log
+
+# Go and Linter cache
+.gocache/
+.golangci-lint/
+.golangci-lint.cache/
+.pre-commit/
+
+# macOS metadata
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Editor state and Workspace configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets and local configurations
+.env
+.env.*
+secrets.json
+credentials.json
+

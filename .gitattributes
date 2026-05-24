@@ -1,0 +1,28 @@
+# Set default behavior for all files to auto-detect text files and normalize line endings to LF.
+* text=auto eol=lf
+
+# Explicitly declare text files that should always be LF.
+*.go text diff=go
+*.md text
+*.yml text
+*.yaml text
+*.json text
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Common configurations
+.gitignore text
+.gitattributes text
+LICENSE text
+VERSION text
+
+# Binary/Generated files (do not normalize line endings)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+quietscope binary
+dist/** binary
+build/** binary

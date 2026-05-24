@@ -1,0 +1,44 @@
+#!/bin/sh
+# Lightweight pre-push hook to verify the codebase before pushing to remote.
+
+set -e
+
+# ANSI escape codes for coloring
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+echo "=== Running local pre-push checks ==="
+
+# 1. Run all unit/integration tests
+echo "Running all tests..."
+if ! go test ./...; then
+    echo "${RED}❌ Some tests failed. Cannot push.${NC}"
+    exit 1
+fi
+echo "${GREEN}✅ All unit tests passed${NC}"
+
+# 2. Run smoke tests based on OS
+OS_NAME="$(uname -s)"
+echo "Detected OS: $OS_NAME"
+
+if [ "$OS_NAME" = "Darwin" ]; then
+    echo "Running macOS smoke test..."
+    if ! sh tests/smoke_test.sh; then
+        echo "${RED}❌ macOS smoke test failed. Cannot push.${NC}"
+        exit 1
+    fi
+    echo "${GREEN}✅ macOS smoke test passed${NC}"
+elif [ "$OS_NAME" = "Linux" ]; then
+    echo "Running Linux smoke test..."
+    if ! sh tests/linux_smoke_test.sh; then
+        echo "${RED}❌ Linux smoke test failed. Cannot push.${NC}"
+        exit 1
+    fi
+    echo "${GREEN}✅ Linux smoke test passed${NC}"
+else
+    echo "${YELLOW}⚠️ Unknown OS ($OS_NAME). Skipping platform-specific smoke tests.${NC}"
+fi
+
+echo "=== ${GREEN}All pre-push checks passed successfully! Safe to push.${NC} ==="

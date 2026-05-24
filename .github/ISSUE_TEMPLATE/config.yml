@@ -1,0 +1,9 @@
+# GitHub Issue Configuration
+blank_issues_enabled: false
+contact_links:
+  - name: "💬 General Questions & Discussions"
+    url: "https://github.com/projectauthors/quietscope/discussions"
+    about: "Ask questions, share ideas, and interact with the community."
+  - name: "🛡️ Security Vulnerabilities"
+    url: "https://github.com/projectauthors/quietscope/security/policy"
+    about: "Report security issues privately (please do NOT open public issues for vulnerabilities)."
