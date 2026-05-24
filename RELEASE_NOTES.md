@@ -1,5 +1,20 @@
 # Release Notes
 
+## v0.5.1
+
+UI layout polish and release asset cleanup for the desktop/report refresh.
+
+### Fixed
+
+- Standalone HTML reports no longer overflow horizontally at desktop widths when the sidebar is fixed.
+- Findings tables now stay constrained to the report content area, with long content wrapping inside table cells.
+- The report risk gauge initializes on first render instead of showing an empty placeholder state.
+- The README logo asset is now a valid PNG file matching its `.png` extension.
+
+### Changed
+
+- Version bumped to `v0.5.1`.
+
 ## v0.5.0
 
 Desktop UI & Report overhaul with full-screen Audit Findings Explorer.

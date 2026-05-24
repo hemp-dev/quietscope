@@ -1,9 +1,13 @@
 # quietscope 🛡️
 
 <p align="center">
-  <img src="https://goreportcard.com/badge/github.com/hemp-dev/quietscope" alt="Go Report Card">
+  <img src="docs/assets/logo.png" width="128" height="128" alt="Quietscope Logo">
+</p>
+
+<p align="center">
+  <a href="https://goreportcard.com/badge/github.com/hemp-dev/quietscope"><img src="https://goreportcard.com/badge/github.com/hemp-dev/quietscope" alt="Go Report Card"></a>
   <img src="https://img.shields.io/badge/License-MIT-emerald.svg" alt="License: MIT">
-  <img src="https://img.shields.io/badge/version-v0.5.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-v0.5.1-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg" alt="Platforms">
 </p>
 
@@ -127,4 +131,3 @@ Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) to l
 ## License 📄
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-

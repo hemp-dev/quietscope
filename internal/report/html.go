@@ -51,11 +51,11 @@ const htmlTemplate = `<!doctype html>
 <title>{{.Title}}</title>
 <style>
 :root {
-  color-scheme: light dark;
-  --bg: #090d10;
-  --panel: #111820;
-  --panel-hover: #17202c;
-  --border: #1e293b;
+  color-scheme: dark;
+  --bg: #05080c;
+  --panel: #0a0f18;
+  --panel-hover: #101726;
+  --border: rgba(255, 255, 255, 0.06);
   --border-focus: #10b981;
   --fg: #f8fafc;
   --muted: #94a3b8;
@@ -77,32 +77,23 @@ const htmlTemplate = `<!doctype html>
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f8fafc;
-    --panel: #ffffff;
-    --panel-hover: #f1f5f9;
-    --border: #e2e8f0;
-    --border-focus: #059669;
-    --fg: #0f172a;
-    --muted: #475569;
-    --accent: #059669;
-    --accent-glow: rgba(5, 150, 105, 0.1);
-    --accent-2: #2563eb;
-    --accent-2-glow: rgba(37, 99, 235, 0.1);
-    
-    --bad: #e11d48;
-    --bad-glow: rgba(225, 29, 72, 0.1);
-    --warn: #d97706;
-    --warn-glow: rgba(217, 119, 6, 0.1);
-    --ok: #059669;
-    --ok-glow: rgba(5, 150, 105, 0.1);
-    --info: #475569;
-    --info-glow: rgba(71, 85, 105, 0.1);
-  }
-}
-
 * { box-sizing: border-box; scroll-behavior: smooth; }
+
+/* Custom scrollbar globally */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 
 body {
   margin: 0;
@@ -111,6 +102,7 @@ body {
   font-family: var(--font);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 .app-container {
@@ -129,26 +121,32 @@ aside.sidebar {
   left: 0;
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
+  padding: 32px 20px;
   z-index: 100;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 40px;
+  padding-left: 12px;
 }
 
 .logo-area svg {
   color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
 }
 
 .logo-area h2 {
-  font-size: 18px;
+  font-size: 20px;
   margin: 0;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .nav-links {
@@ -162,28 +160,40 @@ aside.sidebar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 10px 16px;
   color: var(--muted);
   text-decoration: none;
-  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  border-radius: 0 8px 8px 0;
+  margin-right: 8px;
 }
 
 .nav-link:hover {
   background: var(--panel-hover);
-  color: var(--fg);
+  color: var(--accent);
+  border-left-color: rgba(16, 185, 129, 0.3);
+}
+
+.nav-link:hover svg {
+  color: var(--accent);
 }
 
 .nav-link.active {
-  background: var(--accent-glow);
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--accent);
+  border-left: 3px solid #10b981;
+}
+
+.nav-link.active svg {
   color: var(--accent);
 }
 
 .sidebar-footer {
   border-top: 1px solid var(--border);
-  padding-top: 16px;
+  padding-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -195,11 +205,17 @@ aside.sidebar {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  padding: 8px;
-  background: var(--panel-hover);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
   border-radius: 8px;
   user-select: none;
+  transition: all 0.2s;
+}
+
+.privacy-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .privacy-toggle input {
@@ -210,7 +226,7 @@ aside.sidebar {
   position: relative;
   width: 36px;
   height: 20px;
-  background-color: var(--border);
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   transition: .3s;
 }
@@ -229,6 +245,7 @@ aside.sidebar {
 
 .privacy-toggle input:checked + .slider {
   background-color: var(--accent);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .privacy-toggle input:checked + .slider::before {
@@ -238,33 +255,48 @@ aside.sidebar {
 .privacy-toggle span.label {
   font-size: 12px;
   font-weight: 600;
+  color: var(--muted);
+}
+
+.privacy-toggle input:checked ~ span.label {
   color: var(--fg);
 }
 
 .offline-notice {
   font-size: 11px;
-  color: var(--muted);
+  color: #10b981;
   text-align: center;
-  background: rgba(127,127,127,0.05);
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.15);
   border-radius: 6px;
-  padding: 4px;
+  padding: 6px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 /* Main Content Area */
 main.main-content {
   margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   flex: 1;
   padding: 40px 48px;
-  max-width: 1400px;
+  max-width: none;
+  min-width: 0;
 }
 
 header.content-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 16px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 24px;
   margin-bottom: 32px;
+}
+
+.header-titles {
+  min-width: 0;
 }
 
 .header-titles h1 {
@@ -282,6 +314,8 @@ header.content-header {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 12px;
 }
 
@@ -301,7 +335,7 @@ button.btn {
 
 button.btn.primary {
   background: var(--accent);
-  color: var(--bg);
+  color: #05080c;
   border-color: var(--accent);
 }
 
@@ -347,7 +381,7 @@ h2.section-title {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 24px;
   margin-bottom: 32px;
 }
@@ -355,19 +389,33 @@ h2.section-title {
 .gauge-card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.03) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .gauge-card-title {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.5px;
   color: var(--muted);
   font-weight: 700;
 }
@@ -376,6 +424,7 @@ h2.section-title {
   position: relative;
   width: 140px;
   height: 140px;
+  filter: drop-shadow(0 0 12px rgba(0, 242, 254, 0.15));
 }
 
 .gauge-holder svg {
@@ -384,13 +433,12 @@ h2.section-title {
 
 .gauge-holder .bg-ring {
   fill: none;
-  stroke: var(--border);
+  stroke: rgba(255, 255, 255, 0.04);
   stroke-width: 8px;
 }
 
 .gauge-holder .fill-ring {
   fill: none;
-  stroke: var(--accent);
   stroke-width: 8px;
   stroke-linecap: round;
   stroke-dasharray: 376.99;
@@ -408,110 +456,234 @@ h2.section-title {
 }
 
 .gauge-val-num {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -1px;
 }
 
 .gauge-val-lbl {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
-  text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 600;
+  margin-top: -2px;
 }
 
 .gauge-card-footer {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  letter-spacing: 1px;
+  background: rgba(16, 185, 129, 0.05);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+  transition: all 0.3s ease;
+}
+
+.right-stacked-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.metric-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  position: relative;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
+  flex: 1;
+  min-width: 0;
+}
+
+.metric-card:hover {
+  border-color: rgba(16, 185, 129, 0.2);
+  transform: translateX(4px);
+  background: var(--panel-hover);
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-name {
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid currentColor;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.metric-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.metric-icon.findings {
+  color: var(--bad);
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.15);
+}
+
+.metric-icon.ai-risks {
+  color: var(--warn);
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.metric-icon.reclaimable {
+  color: var(--accent-2);
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+.metric-val {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
+  margin-top: 24px;
 }
 
 .stat-card {
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 8px;
   transition: all 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
 
 .stat-card span.label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-card b.val {
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
-  margin-top: 8px;
-  display: block;
+  color: #e2e8f0;
+  word-break: break-all;
+}
+
+.stat-card b.val.bad {
+  color: var(--bad);
+}
+
+.stat-card b.val.warn {
+  color: var(--warn);
+}
+
+.stat-card b.val.low {
+  color: var(--accent-2);
 }
 
 /* Simulator and Checklist styling */
 .simulator-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 24px;
+  padding: 32px;
+  margin-top: 40px;
   margin-bottom: 40px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.simulator-section::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.02) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .simulator-info {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .simulator-info h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
 .simulator-info p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .sim-progress-box {
-  background: rgba(127,127,127,0.03);
+  background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--border);
-  padding: 16px;
-  border-radius: 12px;
+  padding: 20px;
+  border-radius: 14px;
+  margin-top: 12px;
 }
 
 .sim-score-bar-lbl {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  color: #ffffff;
 }
 
 .sim-bar-outer {
-  height: 10px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  height: 12px;
+  background: #05080c;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -519,57 +691,113 @@ h2.section-title {
 .sim-bar-inner {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
   transition: width 0.4s ease;
 }
 
 .checklist-scroll {
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
+  border-radius: 14px;
+  background: #05080c;
+  padding: 8px 0;
+}
+
+/* Scrollbar styles for checklist-scroll */
+.checklist-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.checklist-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.checklist-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+.checklist-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .checklist-row {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .checklist-row:hover {
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid var(--accent);
+  padding-left: 17px;
 }
 
 .checklist-row:last-child {
   border-bottom: none;
 }
 
+/* Custom premium checkboxes */
 .checklist-row input[type="checkbox"] {
-  margin-top: 4px;
-  accent-color: var(--accent);
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
+  position: relative;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.checklist-row input[type="checkbox"]:hover {
+  border-color: var(--accent);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.checklist-row input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.checklist-row input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  color: #05080c;
+  font-size: 13px;
+  font-weight: 900;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .checklist-text {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .checklist-title {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
+  color: #e2e8f0;
+}
+
+.checklist-row:hover .checklist-title {
+  color: #ffffff;
 }
 
 .checklist-rec {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted);
+  line-height: 1.4;
 }
 
 /* Control Toolbar styles */
@@ -639,22 +867,27 @@ h2.section-title {
 .table-container {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
+  border-radius: 14px;
+  overflow-x: auto;
+  max-width: 100%;
   margin-bottom: 24px;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
 }
 
 .responsive-table {
   width: 100%;
+  min-width: 760px;
+  table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
 }
 
 .responsive-table th,
 .responsive-table td {
-  padding: 14px 18px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
-  vertical-align: top;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .responsive-table th {
@@ -662,9 +895,20 @@ h2.section-title {
   text-transform: uppercase;
   font-weight: 700;
   color: var(--muted);
-  background: rgba(127,127,127,0.02);
+  background: rgba(255, 255, 255, 0.01);
+  letter-spacing: 0.5px;
   cursor: pointer;
   user-select: none;
+  transition: background 0.2s;
+}
+
+.responsive-table th:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+}
+
+.responsive-table tr:hover td {
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .responsive-table tr:last-child td {
@@ -674,6 +918,7 @@ h2.section-title {
 /* Details and Accordions */
 details.evidence-box {
   margin-top: 6px;
+  max-width: 100%;
 }
 
 details.evidence-box summary {
@@ -706,40 +951,51 @@ details.evidence-box pre {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 99px;
   border: 1px solid currentColor;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .badge.critical, .badge.high, .badge.FAIL {
-  color: var(--bad);
-  background: var(--bad-glow);
+  color: #ff3b5c;
+  background: rgba(255, 59, 92, 0.08);
+  border-color: rgba(255, 59, 92, 0.2);
+  box-shadow: 0 0 8px rgba(255, 59, 92, 0.15);
 }
 
 .badge.medium, .badge.warn, .badge.WARN {
-  color: var(--warn);
-  background: var(--warn-glow);
+  color: #ff9f0a;
+  background: rgba(255, 159, 10, 0.08);
+  border-color: rgba(255, 159, 10, 0.2);
+  box-shadow: 0 0 8px rgba(255, 159, 10, 0.15);
 }
 
 .badge.low, .badge.info, .badge.INFO {
-  color: var(--accent-2);
-  background: var(--accent-2-glow);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
 }
 
 .badge.pass, .badge.PASS {
-  color: var(--ok);
-  background: var(--ok-glow);
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
 }
 
 .badge.skipped {
-  color: var(--info);
-  background: var(--info-glow);
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.08);
+  border-color: rgba(100, 116, 139, 0.2);
 }
 
 /* General Layout helpers */
 .section-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -853,6 +1109,7 @@ details.evidence-box pre {
   
   main.main-content {
     margin-left: 0;
+    width: 100%;
     padding: 24px;
   }
   
@@ -884,7 +1141,7 @@ details.evidence-box pre {
     <nav class="nav-links">
       <a href="#dashboard" class="nav-link active" onclick="activateLink(this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Dashboard Swell
+        Dashboard Summary
       </a>
       <a href="#findings" class="nav-link" onclick="activateLink(this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -914,7 +1171,7 @@ details.evidence-box pre {
         <input id="privacy" type="checkbox">
         <span class="slider"></span>
       </label>
-      <div class="offline-notice">Local Offline Audit Only</div>
+      <div class="offline-notice">Offline Local Audit</div>
     </div>
   </aside>
 
@@ -946,11 +1203,24 @@ details.evidence-box pre {
       <h2 class="section-title">Security Dashboard Summary</h2>
       
       <div class="dashboard-grid">
-        <!-- SVG Gauge Card -->
+        <!-- Left Card Panel: SVG Gauge Card -->
         <div class="gauge-card">
-          <span class="gauge-card-title">Risk Exposure</span>
           <div class="gauge-holder">
             <svg width="140" height="140">
+              <defs>
+                <linearGradient id="lowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00f2fe" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+                <linearGradient id="warnGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" />
+                  <stop offset="100%" stop-color="#ef4444" />
+                </linearGradient>
+                <linearGradient id="badGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#f43f5e" />
+                  <stop offset="100%" stop-color="#991b1b" />
+                </linearGradient>
+              </defs>
               <circle cx="70" cy="70" r="60" class="bg-ring"></circle>
               <circle cx="70" cy="70" r="60" class="fill-ring" id="risk-gauge-fill"></circle>
             </svg>
@@ -960,12 +1230,46 @@ details.evidence-box pre {
             </div>
           </div>
           <span class="gauge-card-footer" id="gauge-card-footer">-</span>
+          <span class="gauge-card-title">Risk Score</span>
         </div>
         
-        <!-- Statistics panel cards -->
-        <div class="stats-grid" id="summary-stats-box">
-          <!-- Dynamic contents will be inserted here -->
+        <!-- Right Stacked Panels -->
+        <div class="right-stacked-panels">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-name">Findings</span>
+              <div class="metric-icon findings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+            </div>
+            <b class="metric-val" id="metric-findings-val">0</b>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-name">AI Risks</span>
+              <div class="metric-icon ai-risks">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              </div>
+            </div>
+            <b class="metric-val" id="metric-ai-risks-val">0</b>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-name">Reclaimable Space</span>
+              <div class="metric-icon reclaimable">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </div>
+            </div>
+            <b class="metric-val" id="metric-reclaimable-val">0 B</b>
+          </div>
         </div>
+      </div>
+
+      <!-- Secondary info panel / metadata boxes populated by renderSummary -->
+      <div class="stats-grid" id="summary-stats-box">
+        <!-- Dynamic contents will be inserted here -->
       </div>
 
       <!-- Remediation Simulator (Checklist) -->
@@ -1413,17 +1717,17 @@ details.evidence-box pre {
 
     // Apply color gradient classes
     if (score > 70) {
-      ring.style.stroke = "var(--bad)";
-      label.textContent = "CRITICAL / HIGH RISK";
+      ring.style.stroke = "url(#badGradient)";
+      label.textContent = "CRITICAL RISK";
       label.style.color = "var(--bad)";
       label.style.borderColor = "var(--bad)";
     } else if (score > 35) {
-      ring.style.stroke = "var(--warn)";
-      label.textContent = "MEDIUM WARNING";
+      ring.style.stroke = "url(#warnGradient)";
+      label.textContent = "MEDIUM RISK";
       label.style.color = "var(--warn)";
       label.style.borderColor = "var(--warn)";
     } else {
-      ring.style.stroke = "var(--ok)";
+      ring.style.stroke = "url(#lowGradient)";
       label.textContent = "SECURE / LOW RISK";
       label.style.color = "var(--ok)";
       label.style.borderColor = "var(--ok)";
@@ -1453,6 +1757,14 @@ details.evidence-box pre {
     addStatCard("Audit Time Stamp", text(m.generated_at));
     addStatCard("Host Target OS", masked(sys.macos_version || sys.go_runtime_os || "unknown"));
     addStatCard("Hostname Node", $("privacy").checked ? "<hidden>" : text(sys.hostname || "unknown"));
+
+    // Update metric cards
+    const findingsVal = $("metric-findings-val");
+    if (findingsVal) findingsVal.textContent = text(s.total_findings);
+    const aiRisksVal = $("metric-ai-risks-val");
+    if (aiRisksVal) aiRisksVal.textContent = text((s.high_count || 0) + (s.critical_count || 0) + (s.secrets_exposure_count || 0));
+    const reclaimableVal = $("metric-reclaimable-val");
+    if (reclaimableVal) reclaimableVal.textContent = bytes(s.cleanup_reclaimable_bytes);
   }
 
   // Remediation Plan checklist simulation
@@ -2064,6 +2376,7 @@ details.evidence-box pre {
     renderAIToolCatalog(); 
     renderCleanup(); 
     renderChecklist();
+    updateProjectedScore();
   }
 
   // Event bindings

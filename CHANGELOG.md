@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [0.5.1] - 2026-05-24
+
+UI layout polish for the desktop/report refresh.
+
+### Fixed
+- Standalone HTML reports no longer overflow horizontally with the fixed sidebar layout.
+- Findings tables now stay constrained to the report content area and wrap long content safely.
+- The report risk gauge initializes on first render instead of showing a placeholder state.
+- README logo asset now uses valid PNG encoding.
+
+### Changed
+- Version bumped to `v0.5.1`.
+
+---
+
 ## [0.5.0] - 2026-05-24
 
 Desktop UI & Report overhaul with full-screen Audit Findings Explorer, runtime metrics fix, and standalone HTML report redesign.

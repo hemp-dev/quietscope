@@ -9,14 +9,14 @@
   --bg: #090b0e;
   --fg: #f1f5f9;
   --muted: #94a3b8;
-  --panel: #11151c;
-  --panel-hover: #1b202b;
-  --line: #222936;
+  --panel: rgba(26, 36, 52, 0.45);
+  --panel-hover: rgba(255, 255, 255, 0.05);
+  --line: rgba(255, 255, 255, 0.08);
   --border-focus: #10b981;
   --accent: #10b981;
-  --accent-glow: rgba(16, 185, 129, 0.15);
-  --accent-2: #3b82f6;
-  --accent-2-glow: rgba(59, 130, 246, 0.15);
+  --accent-glow: rgba(16, 185, 129, 0.25);
+  --accent-2: #00f2fe;
+  --accent-2-glow: rgba(0, 242, 254, 0.25);
   
   --bad: #f43f5e;
   --bad-glow: rgba(244, 63, 94, 0.15);
@@ -30,9 +30,25 @@
 
 * { box-sizing: border-box; }
 
+/* Custom scrollbar style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 body {
   margin: 0;
-  background: var(--bg);
+  background: #07090e;
   color: var(--fg);
   font-family: var(--font);
   line-height: 1.5;
@@ -41,9 +57,34 @@ body {
   overflow: hidden;
 }
 
+.mac-window-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, #0f1622 0%, #07090e 100%);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.mac-window {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(26, 36, 52, 0.45);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.8), 0 0 1px 1px rgba(255,255,255,0.1) inset;
+}
+
 header {
   border-bottom: 1px solid var(--line);
-  background: var(--panel);
+  background: rgba(17, 21, 28, 0.5);
   padding: 14px 24px;
   display: flex;
   justify-content: space-between;
@@ -65,6 +106,22 @@ header h1 svg {
   color: var(--accent);
 }
 
+.window-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.window-controls .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.window-controls .dot.close { background: #ff5f56; }
+.window-controls .dot.minimize { background: #ffbd2e; }
+.window-controls .dot.expand { background: #27c93f; }
+
 .notice {
   font-size: 11px;
   color: var(--muted);
@@ -78,7 +135,7 @@ header h1 svg {
 main {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: calc(100vh - 52px);
+  height: calc(100% - 52px);
   overflow: hidden;
 }
 
@@ -90,7 +147,9 @@ main {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: #0d1015;
+  background: rgba(13, 16, 21, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .panel-title {
@@ -136,7 +195,7 @@ form {
 
 .form-group input[type="text"],
 .form-group input[type="number"] {
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--line);
   color: var(--fg);
   border-radius: 8px;
@@ -150,12 +209,12 @@ form {
 .form-group input[type="text"]:focus,
 .form-group input[type="number"]:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px var(--accent-glow);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .checkbox-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -163,20 +222,24 @@ form {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 12px;
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
   font-weight: 600;
 }
 
 .checkbox-label:hover {
-  background: var(--panel-hover);
-  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  transform: scale(1.02);
 }
 
 .checkbox-label input {
@@ -193,7 +256,7 @@ button {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid var(--line);
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--fg);
   display: inline-flex;
   align-items: center;
@@ -202,14 +265,23 @@ button {
 }
 
 button.primary {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #07090e;
+  border-color: #10b981;
+  font-weight: 700;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-button.primary:hover {
+button.primary:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.9);
   filter: brightness(1.1);
-  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+button.primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
 button.danger {
@@ -234,53 +306,97 @@ button:disabled {
   grid-template-rows: 180px 1fr;
   overflow: hidden;
   height: 100%;
+  background: rgba(7, 9, 14, 0.2);
 }
 
 .runs-panel {
   border-bottom: 1px solid var(--line);
   overflow-y: auto;
   padding: 16px 24px;
-  background: #0c0e12;
+  background: rgba(12, 14, 18, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
 }
 
 .runs-list {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 140px;
   padding-bottom: 8px;
+  position: relative;
+  padding-left: 36px;
+}
+
+.runs-list::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  z-index: 1;
 }
 
 .run-item {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 220px;
   position: relative;
-  overflow: hidden;
+}
+
+.run-item::before {
+  content: "";
+  position: absolute;
+  left: -27px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid #07090e;
+  z-index: 2;
+  transition: all 0.3s ease;
 }
 
 .run-item:hover {
-  background: var(--panel-hover);
-  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .run-item.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 10px var(--accent-glow);
-  background: var(--panel-hover);
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
 }
 
 .run-item.active::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent);
+  background: #00f2fe;
+  border-color: #07090e;
+  box-shadow: 0 0 10px #00f2fe, 0 0 20px #00f2fe;
+  animation: pulse-cyan 1.5s infinite alternate;
+}
+
+@keyframes pulse-cyan {
+  0% {
+    box-shadow: 0 0 6px rgba(0, 242, 254, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(0, 242, 254, 1), 0 0 26px rgba(0, 242, 254, 0.4);
+  }
 }
 
 .run-id {
@@ -298,7 +414,6 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 4px;
 }
 
 .status-pill {
@@ -328,6 +443,7 @@ button:disabled {
   border-right: 1px solid var(--line);
   padding: 24px;
   gap: 20px;
+  background: rgba(10, 14, 22, 0.2);
 }
 
 .detail-section:last-child {
@@ -340,11 +456,14 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(127,127,127,0.02);
-  border: 1px solid var(--line);
-  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px;
   border-radius: 12px;
-  gap: 12px;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .gauge-svg-holder {
@@ -365,12 +484,11 @@ button:disabled {
 
 .gauge-svg-holder .fill-ring {
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 8px;
   stroke-linecap: round;
   stroke-dasharray: 282.74;
   stroke-dashoffset: 282.74;
-  transition: stroke-dashoffset 0.8s ease-out, stroke 0.3s;
+  stroke-width: 8px;
+  transition: stroke-dashoffset 0.8s ease-out;
 }
 
 @keyframes gauge-pulse {
@@ -403,21 +521,27 @@ button:disabled {
 }
 
 .gauge-num {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  line-height: 1;
 }
 
 .gauge-lbl {
-  font-size: 9px;
-  color: var(--muted);
+  font-size: 10px;
+  color: #00f2fe;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
 }
 
 .gauge-level-badge {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 2px 10px;
+  padding: 4px 12px;
   border-radius: 99px;
   border: 1px solid currentColor;
 }
@@ -429,7 +553,7 @@ button:disabled {
 }
 
 .metric-card {
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--line);
   padding: 12px;
   border-radius: 8px;
@@ -478,6 +602,19 @@ button:disabled {
   transition: width 0.3s ease;
 }
 
+.console-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #06090e;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  margin: 16px;
+}
+
 .terminal-header {
   border-bottom: 1px solid var(--line);
   background: #0a0d13;
@@ -497,14 +634,6 @@ button:disabled {
   gap: 8px;
 }
 
-.console-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  height: 100%;
-}
-
 .console {
   background: #05070a;
   flex: 1;
@@ -516,20 +645,23 @@ button:disabled {
   word-break: break-all;
   margin: 0;
   outline: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
 
 /* Console text coloring classes */
 .log-line {
   display: block;
-  margin-bottom: 4px;
-  color: #a3b3c6;
+  margin-bottom: 6px;
+  color: #64748b;
+  line-height: 1.6;
 }
 
-.log-line.err { color: var(--bad); }
-.log-line.warn { color: var(--warn); }
-.log-line.ok { color: var(--ok); }
-.log-line.info { color: var(--accent-2); }
-.log-line.system { color: var(--muted); font-style: italic; }
+.log-line.err { color: #ff3b30; text-shadow: 0 0 4px rgba(255, 59, 48, 0.2); }
+.log-line.warn { color: #ff9f00; text-shadow: 0 0 4px rgba(255, 159, 0, 0.2); }
+.log-line.ok { color: #00ff88; text-shadow: 0 0 6px rgba(0, 255, 136, 0.3); font-weight: 600; }
+.log-line.info { color: #00f2fe; text-shadow: 0 0 6px rgba(0, 242, 254, 0.3); }
+.log-line.system { color: #64748b; font-style: italic; }
 
 .empty-state {
   display: flex;
@@ -559,8 +691,8 @@ button:disabled {
   color: var(--fg);
 }
 .tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: #00f2fe;
+  border-bottom-color: #00f2fe;
 }
 .tab-btn:disabled {
   opacity: 0.3;
@@ -609,79 +741,89 @@ button:disabled {
 </style>
 </head>
 <body>
+<div class="mac-window-container">
+  <div class="mac-window">
+    <header>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="window-controls">
+          <span class="dot close"></span>
+          <span class="dot minimize"></span>
+          <span class="dot expand"></span>
+        </div>
+        <h1>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Quietscope
+        </h1>
+      </div>
+      <div class="notice">Developer Preview v0.5.1</div>
+    </header>
 
-<header>
-  <h1>
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
-    Quietscope
-  </h1>
-  <div class="notice">Developer Preview v0.5.0</div>
-</header>
+    <main>
+      <!-- Sidebar panel config -->
+      <div class="sidebar">
+        <div class="panel-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Audit Configurations
+        </div>
+        <form id="config-form">
+          <div class="sidebar-sub-title" title="Scope parameters for filesystem audits">Scan Scope</div>
+          <div class="checkbox-grid" style="margin-bottom: 10px;">
+            <label class="checkbox-label" title="Deep Scan: Inspects actual file contents (e.g. prompt rules) rather than just system metadata"><input type="checkbox" id="deep"><span>Deep Scan</span></label>
+            <label class="checkbox-label" title="AI Audit: Analyzes local LLMs, MCP configurations, client/server ports, and security vectors"><input type="checkbox" id="ai-audit" checked><span>AI Audit</span></label>
+            <label class="checkbox-label" title="No Sudo: Skips checks requiring administrative privileges to ensure non-intrusive scanning"><input type="checkbox" id="no-sudo" checked><span>No Sudo</span></label>
+          </div>
 
-<main>
-  <!-- Sidebar panel config -->
-  <div class="sidebar">
-    <div class="panel-title">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Audit Configurations
-    </div>
-    <form id="config-form">
-      <div class="sidebar-sub-title" title="Scope parameters for filesystem audits">Scan Scope</div>
-      <div class="checkbox-grid" style="margin-bottom: 10px;">
-        <label class="checkbox-label" title="Deep Scan: Inspects actual file contents (e.g. prompt rules) rather than just system metadata"><input type="checkbox" id="deep"><span>Deep Scan</span></label>
-        <label class="checkbox-label" title="AI Audit: Analyzes local LLMs, MCP configurations, client/server ports, and security vectors"><input type="checkbox" id="ai-audit" checked><span>AI Audit</span></label>
-        <label class="checkbox-label" title="No Sudo: Skips checks requiring administrative privileges to ensure non-intrusive scanning"><input type="checkbox" id="no-sudo" checked><span>No Sudo</span></label>
+          <div class="sidebar-sub-title" title="Formats to export your scan report assets">Report Formats</div>
+          <div class="checkbox-grid">
+            <label class="checkbox-label" title="HTML: Generates a self-contained offline security report dashboard"><input type="checkbox" id="want-html" checked><span>HTML</span></label>
+            <label class="checkbox-label" title="JSON: Generates structured, machine-readable audit report payload"><input type="checkbox" id="want-json" checked><span>JSON</span></label>
+            <label class="checkbox-label" title="Text: Generates a lightweight plain-text summary report"><input type="checkbox" id="want-text" checked><span>Text</span></label>
+          </div>
+
+          <div class="form-group">
+            <label for="output-dir">Output Directory</label>
+            <input type="text" id="output-dir" placeholder="Default Desktop folder">
+          </div>
+
+          <div class="form-group">
+            <label for="project-root">Project Root (Deep Scan)</label>
+            <input type="text" id="project-root" placeholder="Optional directory path">
+          </div>
+
+          <div class="form-group">
+            <label for="max-file-size-mb">Max File Size (MiB)</label>
+            <input type="number" id="max-file-size-mb" min="1" step="1" value="5">
+          </div>
+
+          <button type="submit" class="primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start Defensive Audit
+          </button>
+        </form>
       </div>
 
-      <div class="sidebar-sub-title" title="Formats to export your scan report assets">Report Formats</div>
-      <div class="checkbox-grid">
-        <label class="checkbox-label" title="HTML: Generates a self-contained offline security report dashboard"><input type="checkbox" id="want-html" checked><span>HTML</span></label>
-        <label class="checkbox-label" title="JSON: Generates structured, machine-readable audit report payload"><input type="checkbox" id="want-json" checked><span>JSON</span></label>
-        <label class="checkbox-label" title="Text: Generates a lightweight plain-text summary report"><input type="checkbox" id="want-text" checked><span>Text</span></label>
-      </div>
+      <!-- Workspace Panels (Runs List & Log Output) -->
+      <div class="workspace">
+        <div class="runs-panel">
+          <div class="panel-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Active / Past Audits
+          </div>
+          <div class="runs-list" id="runs-list">
+            <div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>
+          </div>
+        </div>
 
-      <div class="form-group">
-        <label for="output-dir">Output Directory</label>
-        <input type="text" id="output-dir" placeholder="Default Desktop folder">
+        <!-- Active audit run details -->
+        <div class="detail-panel" id="detail-panel">
+          <div class="empty-state" style="grid-column: span 2;">Select or start an audit from the list.</div>
+        </div>
       </div>
-
-      <div class="form-group">
-        <label for="project-root">Project Root (Deep Scan)</label>
-        <input type="text" id="project-root" placeholder="Optional directory path">
-      </div>
-
-      <div class="form-group">
-        <label for="max-file-size-mb">Max File Size (MiB)</label>
-        <input type="number" id="max-file-size-mb" min="1" step="1" value="5">
-      </div>
-
-      <button type="submit" class="primary">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Start Defensive Audit
-      </button>
-    </form>
+    </main>
   </div>
-
-  <!-- Workspace Panels (Runs List & Log Output) -->
-  <div class="workspace">
-    <div class="runs-panel">
-      <div class="panel-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        Active / Past Audits
-      </div>
-      <div class="runs-list" id="runs-list">
-        <div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>
-      </div>
-    </div>
-
-    <!-- Active audit run details -->
-    <div class="detail-panel" id="detail-panel">
-      <div class="empty-state" style="grid-column: span 2;">Select or start an audit from the list.</div>
-    </div>
-  </div>
-</main>
+</div>
 
 <script>
 (function() {
@@ -1164,7 +1306,7 @@ button:disabled {
         styleClass += " warn";
       } else if (normText.includes("pass") || normText.includes("completed") || normText.includes("success")) {
         styleClass += " ok";
-      } else if (normText.includes("info")) {
+      } else if (normText.includes("scan") || normText.includes("check") || normText.includes("info")) {
         styleClass += " info";
       } else if (normText.includes("system") || normText.includes("queued") || normText.includes("started")) {
         styleClass += " system";
@@ -1217,6 +1359,11 @@ button:disabled {
     // Circumference of r=45 circle is 2 * PI * 45 = 282.74
     const score = (!isRunning && job.summary) ? Number(job.summary.overall_risk_score || 0) : 0;
     const circleOffset = 282.74 - (282.74 * score) / 100;
+
+    // Calculate glowing white dot knob coordinates
+    const angle = (score / 100) * 2 * Math.PI;
+    const knobCx = (55 + 45 * Math.cos(angle)).toFixed(2);
+    const knobCy = (55 + 45 * Math.sin(angle)).toFixed(2);
     
     let badgeColor = "var(--ok)";
     let riskLabel = "Secure";
@@ -1242,13 +1389,20 @@ button:disabled {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Audit Summary & Metrics
           </div>
-          
+
           <!-- Score Circular Gauge -->
           <div class="gauge-box">
             <div class="gauge-svg-holder ${isRunning ? 'scanning' : ''}">
               <svg width="110" height="110">
+                <defs>
+                  <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00f2fe" />
+                    <stop offset="100%" stop-color="#10b981" />
+                  </linearGradient>
+                </defs>
                 <circle cx="55" cy="55" r="45" class="bg-ring"></circle>
-                <circle cx="55" cy="55" r="45" class="fill-ring" id="risk-fill-circle" style="stroke-dashoffset: ${circleOffset}; stroke: ${badgeColor};"></circle>
+                <circle cx="55" cy="55" r="45" class="fill-ring" id="risk-fill-circle" stroke="url(#gauge-gradient)" style="stroke-dashoffset: ${circleOffset};"></circle>
+                <circle cx="${knobCx}" cy="${knobCy}" r="5" fill="#ffffff" style="filter: drop-shadow(0px 0px 8px #ffffff);"></circle>
               </svg>
               <div class="gauge-inner-text">
                 <span class="gauge-num">${isRunning ? '-' : score}</span>
@@ -1306,15 +1460,24 @@ button:disabled {
 
       <!-- Tabbed Workspace view (Console Log vs Report Findings) -->
       <div class="console-container">
-        <div class="terminal-header">
-          <div style="display: flex; gap: 4px;">
+        <div class="terminal-header" style="background: #06090e; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 10px 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="window-controls" style="margin-right: 8px;">
+              <span class="dot close" style="width: 8px; height: 8px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
+              <span class="dot minimize" style="width: 8px; height: 8px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
+              <span class="dot expand" style="width: 8px; height: 8px; background: #27c93f; border-radius: 50%; display: inline-block;"></span>
+            </div>
+            <span class="terminal-title" style="font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px;">Terminal Logs</span>
+          </div>
+
+          <div style="display: flex; gap: 6px; align-items: center;">
             <button class="tab-btn ${state.activeTab === 'console' ? 'active' : ''}" onclick="window.switchTab('console')">Console Log</button>
             <button class="tab-btn ${state.activeTab === 'report' ? 'active' : ''}" onclick="window.switchTab('report')" ${job.status !== 'completed' ? 'disabled' : ''}>Audit Findings</button>
           </div>
           
           ${state.activeTab === 'console' ? `
             <label style="font-size: 10px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;" title="Pause auto-scrolling when new logs are received to comfortably read traces">
-              <input type="checkbox" id="scroll-lock-cb" style="margin: 0; accent-color: var(--accent);" ${state.scrollLock ? 'checked' : ''} onchange="window.toggleScrollLock(this.checked)">
+              <input type="checkbox" id="scroll-lock-cb" style="margin: 0; accent-color: #00f2fe;" ${state.scrollLock ? 'checked' : ''} onchange="window.toggleScrollLock(this.checked)">
               Pause Scroll
             </label>
           ` : `
