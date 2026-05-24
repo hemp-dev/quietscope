@@ -38,3 +38,9 @@ tmp/
 secrets.json
 credentials.json
 
+# Research, guidelines, and prompt files
+/deep-research-report.md
+/EXEC.md
+/Cross-Platform AI Security Audit Checks.md
+/OPEN_SOURCE_PREPARATION_PLAN.md
+/open_source_release_prompt.md

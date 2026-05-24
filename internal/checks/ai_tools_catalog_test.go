@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/projectauthors/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/audit"
 )
 
 func TestAIToolCatalogContainsHermesOpenCodeAndQwen(t *testing.T) {

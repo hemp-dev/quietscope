@@ -1,36 +1,46 @@
-# Security Policy
+# Security Policy 🛡️
 
-## Reporting a vulnerability
+We take the security of `quietscope` very seriously. If you believe you have found a security vulnerability in this project, please report it to us responsibly using the instructions below.
 
-Please report security issues privately to the project maintainers. Until a dedicated security email is published, use a private GitHub security advisory if available.
+## Supported Versions ✅
 
-Do not include real secrets, tokens, cookies, private keys, Keychain data, browser password data, or full private audit reports in public issues.
+We actively support and provide security patches for the following versions of `quietscope`:
 
-## What counts as a security issue
+| Version | Supported |
+| :--- | :--- |
+| v0.4.x | Yes (Active) |
+| < v0.4.0 | No |
 
-- Secret values printed in output.
-- Reading sensitive file contents that should be metadata-only.
-- Executing discovered MCP commands, project scripts, shell startup snippets, or suspicious commands.
-- Cleanup deleting paths outside the allowlist.
-- HTML report injection or unsafe rendering of untrusted strings.
-- Network requests, telemetry, analytics, or remote report upload.
-- Command construction that uses shell strings instead of strict argument arrays.
+---
 
-## What does not count as a security issue
+## Reporting a Vulnerability 🔒
 
-- Best-effort checks reporting `INFO` when macOS blocks access.
-- False positives in risk classification.
-- Missing coverage for a new AI tool or MCP schema.
-- Manual verification requirements for TCC, MDM, or software updates.
+**Please do not open a public GitHub issue for security vulnerabilities.**
 
-## Privacy expectations
+If you discover a vulnerability, please report it via one of the following methods:
+1. **GitHub Private Vulnerability Reporting**: Go to the "Security" tab of the repository on GitHub and click "Report a vulnerability" (once the repository is public).
+2. **Email**: Send an email to `hempestdevelopment@gmail.com` with the subject `[SECURITY VULNERABILITY] quietscope`.
 
-Audit reports contain local paths, host metadata, and security posture information. Treat reports as sensitive local files. The tool masks sensitive environment values and does not read secret file contents, but local paths can still reveal private project or username information.
+### What to include:
+- A detailed description of the vulnerability.
+- Step-by-step instructions to reproduce the issue (PoC).
+- Potential impact (e.g., local privilege escalation, unexpected path traversal in cleanup).
+- Any proposed remediation steps or code diffs.
 
-## Responsible disclosure process
+---
 
-1. Send a private report with reproduction steps and expected impact.
-2. Maintainers acknowledge and triage.
-3. A fix is prepared with regression tests where practical.
-4. Release notes credit the reporter if requested.
-5. Public disclosure happens after a fixed release is available or by mutual agreement.
+## Our Commitment 🤝
+
+When you report a vulnerability, we promise to:
+- Acknowledge receipt of your report within 48 hours.
+- Work closely with you to validate and understand the issue.
+- Provide a timeline for fixing the vulnerability.
+- Publicly credit you for the discovery (unless you prefer to remain anonymous) once the fix is released.
+
+---
+
+## Safe Harbor & Out of Scope 🚫
+
+As `quietscope` is a local-only auditing tool:
+- Vulnerabilities that require full root system access already present on the host to exploit quietscope are considered low severity.
+- Modifying standard system settings or deleting files via `--clean-confirm` when explicitly authorized by the user is the intended behavior and is out of scope unless it deletes directories outside the strictly defined allowlist.

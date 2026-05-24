@@ -1,17 +1,17 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "quietscope",
-  "version": "v0.3.0",
+  "version": "v0.4.0",
   "outputfilename": "quietscope",
   "frontend:dir": "frontend",
   "author": {
-    "name": "projectauthors",
-    "email": "info@projectauthors.local"
+    "name": "hemp-dev",
+    "email": "hempestdevelopment@gmail.com"
   },
   "info": {
-    "companyName": "projectauthors",
+    "companyName": "hemp-dev",
     "productName": "quietscope",
-    "productVersion": "v0.3.0",
-    "copyright": "Copyright 2026 projectauthors"
+    "productVersion": "v0.4.0",
+    "copyright": "Copyright (c) 2026 Mikhail Shiriaev (hemp-dev)"
   }
 }

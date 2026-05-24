@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
 )
 
 func RunSecurity(ctx context.Context, cfg audit.RuntimeConfig, runner *platform.Runner) (audit.CheckResult, error) {

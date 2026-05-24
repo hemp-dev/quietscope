@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/projectauthors/quietscope/internal/platform"
-	"github.com/projectauthors/quietscope/internal/safety"
+	"github.com/hemp-dev/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/safety"
 )
 
 func TestAIArtifactClassificationCriticalProjectAgents(t *testing.T) {

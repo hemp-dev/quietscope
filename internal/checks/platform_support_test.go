@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
 )
 
 func TestUnsupportedPlatformFindingUsesSkippedStatus(t *testing.T) {

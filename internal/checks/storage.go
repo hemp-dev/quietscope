@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
 )
 
 func RunStorage(ctx context.Context, cfg audit.RuntimeConfig, runner *platform.Runner) (audit.CheckResult, error) {

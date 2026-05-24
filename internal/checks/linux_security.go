@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
-	"github.com/projectauthors/quietscope/internal/safety"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/safety"
 )
 
 type linuxSecurityPathSet struct {

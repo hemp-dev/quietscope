@@ -1,88 +1,75 @@
-# Contributing
+# Contributing to quietscope 🤝
 
-Thanks for helping improve `quietscope`.
+Thank you for your interest in improving `quietscope`! We want to make it easy to contribute new security checks, support more platforms, and optimize disk hygiene scanning.
 
-## Local development
+## Our Philosophy 🧠
+1. **Privacy Above All**: No checks must ever transmit data over the network or read private secret contents (API key values, passwords, private keys).
+2. **Defensive Only**: `quietscope` is an auditing tool. It must never attempt to exploit vulnerabilities or silently modify system settings.
+3. **Safety First**: Any feature that deletes files (cleanup) must be strictly opt-in, highly restrictive, and thoroughly validated.
 
-```sh
-go test ./...
-go build -o quietscope ./cmd/quietscope
-./quietscope --help
+---
+
+## How to Add a New Security Check 🛠️
+
+All quietscope audit checks are organized under `internal/checks/`. 
+
+### Step 1: Identify the Check Group
+Choose where your check belongs:
+- `internal/checks/os_darwin.go` (macOS specific)
+- `internal/checks/os_linux.go` (Linux specific)
+- `internal/checks/os_windows.go` (Windows specific)
+- `internal/checks/ai_security.go` (AI / MCP / local LLM checks)
+- `internal/checks/storage.go` (Caches, logs, simulator cleanups)
+
+### Step 2: Implement the Check Interface
+Every check returns a structured `Finding`:
+
+```go
+type Finding struct {
+	ID          string    `json:"id"`          // Unique identifier (e.g., "SEC-MAC-SIP-001")
+	Title       string    `json:"title"`       // Short description
+	Category    string    `json:"category"`    // "Security", "AI Agent Risk", "Storage", "Permissions"
+	Severity    string    `json:"severity"`    // "CRITICAL", "HIGH", "WARNING", "INFO"
+	Status      string    `json:"status"`      // "FAILED", "PASSED", "SKIPPED"
+	Message     string    `json:"message"`     // Human-readable outcome summary
+	Remediation string    `json:"remediation"` // How to fix the finding
+}
 ```
 
-If your local sandbox cannot write to the default Go build cache, use a writable cache:
-
-```sh
-GOCACHE=/private/tmp/macos-malware-gocache go test ./...
-```
-
-### Git hooks & pre-commit validation
-
-To ensure code style consistency, formatting compliance, and that all tests pass, the repository supports automated local validation hooks.
-
-#### Option A: Native Git Hooks (Recommended, Zero Dependencies)
-Run the setup script to configure local hook executions:
-
-```sh
-sh scripts/setup-git-hooks.sh
-```
-
-- **Pre-commit hook**: Automatically runs `gofmt` and `go vet`, and verifies compilation on staged `.go` files.
-- **Pre-push hook**: Automatically runs the entire test suite (`go test ./...`) and platform smoke tests (`tests/smoke_test.sh`).
-
-#### Option B: Pre-commit Framework
-If you prefer using the `pre-commit` CLI tool, you can install the configuration via:
-
-```sh
-pre-commit install
+Use `internal/platform/commands.go` to invoke system shell commands safely:
+```go
+// Correct: passing arguments as an array slice, preventing command injection
+output, err := platform.RunCommand("csrutil", []string{"status"}, 5 * time.Second)
 ```
 
 ---
 
-Run smoke tests:
+## Development Environment Setup 💻
 
-```sh
-sh tests/smoke_test.sh
+### Prerequisites
+- **Go 1.22+**
+- **Wails CLI v2** (only if working on the desktop application)
+- **Node.js & npm** (only for the Wails frontend)
+
+### Running tests
+```bash
+# Run all Go unit tests
+go test ./...
 ```
 
-Cross-platform validation for platform-sensitive changes:
-
-```sh
-GOOS=linux GOARCH=amd64 go test -exec=true ./...
-GOOS=windows GOARCH=amd64 go test -exec=true ./...
-GOOS=darwin GOARCH=arm64 go build ./cmd/quietscope
+### Running Wails Desktop in Development Mode
+```bash
+cd desktop
+wails dev
 ```
 
-## Code style
+---
 
-- Use Go 1.22+ and the standard library unless a dependency is clearly justified.
-- Keep checks modular under `internal/checks`.
-- Route all command execution through `internal/platform/commands.go`.
-- Use strict argument arrays with `os/exec`; do not add `sh -c`.
-- Keep report rendering behind escaping/redaction helpers.
-- Handle missing commands and permission denials gracefully.
-- Use `internal/platform` OS and capability helpers for platform-specific behavior.
-- Represent unsupported platform checks with `SKIPPED`/info findings rather than warn/fail severities.
+## Submitting a Pull Request 🚀
 
-## Adding a new check
-
-1. Add a focused function in the relevant `internal/checks` file.
-2. Return `audit.Finding` values with clear evidence and recommendation.
-3. Do not read secret contents.
-4. Do not execute discovered commands.
-5. Add tests for risky classification, redaction, allowlist, or scoring logic when applicable.
-6. Gate OS-specific checks behind platform capability helpers.
-7. Update README if the user-visible behavior changes.
-
-## Pull request requirements
-
-- Explain the security/privacy impact.
-- Include tests or justify why a change is docs-only.
-- Confirm `go test ./...` passes.
-- Confirm Linux/Windows build or cross-test behavior when touching platform boundaries.
-- Confirm no telemetry, external report upload, auto-update, or external UI assets were added.
-- Confirm cleanup behavior remains allowlist-only and confirmation-gated.
-
-## Privacy and safety guardrails
-
-Do not add code that reads Keychain, browser saved passwords, cookies, private key contents, `.env` contents, or cloud credential contents. Metadata-only checks are acceptable when useful.
+1. Fork the repository and create your branch from `main`.
+2. Run `gofmt -s -w .` and `go vet ./...` to verify code format and basic correctness.
+3. Commit your changes using descriptive commit messages (following [Conventional Commits](https://www.conventionalcommits.org/)):
+   - `feat(checks): add systemd autostart check for linux`
+   - `fix(safety): restrict cleanup boundaries for trash directory`
+4. Push your branch and open a Pull Request. Fill in the Pull Request Template.

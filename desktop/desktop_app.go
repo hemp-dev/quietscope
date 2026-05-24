@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/projectauthors/quietscope/internal/app"
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/app"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -102,7 +102,7 @@ func (a *App) StartAudit(cfgJson string) (string, error) {
 	jobID := now.UTC().Format("20060102-150405") + "-" + randomHex(4)
 
 	cfg := app.Config{
-		Version:       "v0.3.0",
+		Version:       "v0.4.0",
 		StartedAt:     now,
 		WantText:      input.WantText,
 		WantJSON:      input.WantJSON,

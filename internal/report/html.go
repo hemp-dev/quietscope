@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"os"
 
-	"github.com/projectauthors/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/audit"
 )
 
 func WriteHTML(path string, report audit.Report) error {

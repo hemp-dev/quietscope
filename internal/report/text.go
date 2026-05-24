@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/projectauthors/quietscope/internal/audit"
-	"github.com/projectauthors/quietscope/internal/platform"
+	"github.com/hemp-dev/quietscope/internal/audit"
+	"github.com/hemp-dev/quietscope/internal/platform"
 )
 
 func WriteText(path string, report audit.Report) error {
