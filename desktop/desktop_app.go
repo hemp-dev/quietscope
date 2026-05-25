@@ -47,6 +47,7 @@ type activeJob struct {
 	finishedAt time.Time
 	events     []audit.ProgressEvent
 	summary    audit.Summary
+	report     audit.Report
 	err        string
 }
 
@@ -104,7 +105,7 @@ func (a *App) StartAudit(cfgJson string) (string, error) {
 	jobID := now.UTC().Format("20060102-150405") + "-" + randomHex(4)
 
 	cfg := app.Config{
-		Version:       "v0.5.1",
+		Version:       "v0.6.0",
 		StartedAt:     now,
 		WantText:      input.WantText,
 		WantJSON:      true, // Always generate JSON internally for the desktop viewer
@@ -178,6 +179,7 @@ func (a *App) runAuditJob(ctx context.Context, job *activeJob) {
 	job.finishedAt = time.Now()
 	job.cancel = nil
 	job.summary = report.Summary
+	job.report = report
 	if err == nil {
 		job.status = "completed"
 	} else if ctx.Err() != nil {
@@ -296,6 +298,150 @@ func (a *App) GetReportJSON(jobID string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+// ListManageableArtifacts returns AI Control Center artifacts for a completed job.
+func (a *App) ListManageableArtifacts(jobID string) (string, error) {
+	report, err := a.reportForJob(jobID)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(audit.DedupeManageableArtifacts(report.ManageableArtifacts))
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// PreviewAction returns a safe diff/preview for an artifact action.
+func (a *App) PreviewAction(reqJSON string) (string, error) {
+	req, err := a.desktopActionRequest(reqJSON)
+	if err != nil {
+		return "", err
+	}
+	result, err := safety.PreviewAction(req)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// ExecuteAction performs a previewed action through the safe remediation core.
+func (a *App) ExecuteAction(reqJSON string) (string, error) {
+	req, err := a.desktopActionRequest(reqJSON)
+	if err != nil {
+		return "", err
+	}
+	result, err := safety.ExecuteAction(req)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// RestoreBackup restores an artifact from a Quietscope backup.
+func (a *App) RestoreBackup(reqJSON string) (string, error) {
+	req, err := a.desktopActionRequest(reqJSON)
+	if err != nil {
+		return "", err
+	}
+	req.Action = string(safety.ActionRestore)
+	result, err := safety.ExecuteAction(req)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// ReadArtifact reads a safe, non-secret text artifact for inline editing.
+func (a *App) ReadArtifact(path string) (string, error) {
+	home, proj := a.getHomeAndProjectRoot()
+	return safety.ReadArtifact(path, home, proj, 0)
+}
+
+// SaveArtifact writes a safe text artifact after creating a backup.
+func (a *App) SaveArtifact(path string, content string) (string, error) {
+	home, proj := a.getHomeAndProjectRoot()
+	result, err := safety.SaveArtifact(path, content, home, proj)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (a *App) reportForJob(jobID string) (audit.Report, error) {
+	a.mu.Lock()
+	job, exists := a.jobs[jobID]
+	a.mu.Unlock()
+	if !exists {
+		return audit.Report{}, fmt.Errorf("job %s not found", jobID)
+	}
+	a.mu.Lock()
+	report := job.report
+	outputDir := job.config.OutputDir
+	status := job.status
+	a.mu.Unlock()
+	if len(report.ManageableArtifacts) > 0 || status == "completed" {
+		return report, nil
+	}
+	jsonPath := filepath.Join(outputDir, "report.json")
+	data, err := os.ReadFile(jsonPath)
+	if err != nil {
+		return audit.Report{}, fmt.Errorf("failed to read report file: %w", err)
+	}
+	if err := json.Unmarshal(data, &report); err != nil {
+		return audit.Report{}, err
+	}
+	return report, nil
+}
+
+func (a *App) desktopActionRequest(reqJSON string) (safety.ActionRequest, error) {
+	var input struct {
+		JobID        string         `json:"job_id,omitempty"`
+		Action       string         `json:"action"`
+		Path         string         `json:"path"`
+		ArtifactID   string         `json:"artifact_id,omitempty"`
+		ServerName   string         `json:"server_name,omitempty"`
+		Content      string         `json:"content,omitempty"`
+		ServerConfig map[string]any `json:"server_config,omitempty"`
+		BackupPath   string         `json:"backup_path,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(reqJSON), &input); err != nil {
+		return safety.ActionRequest{}, fmt.Errorf("invalid action request: %w", err)
+	}
+	home, proj := a.getHomeAndProjectRoot()
+	if input.JobID != "" {
+		if report, err := a.reportForJob(input.JobID); err == nil && report.Metadata.ProjectRoot != "" {
+			proj = report.Metadata.ProjectRoot
+		}
+	}
+	return safety.ActionRequest{
+		Action:       input.Action,
+		Path:         input.Path,
+		ArtifactID:   input.ArtifactID,
+		ServerName:   input.ServerName,
+		Content:      input.Content,
+		ServerConfig: input.ServerConfig,
+		BackupPath:   input.BackupPath,
+		Home:         home,
+		ProjectRoot:  proj,
+	}, nil
 }
 
 func randomHex(bytesLen int) string {

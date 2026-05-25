@@ -37,8 +37,11 @@ func RunAISkillsContext(ctx context.Context, cfg audit.RuntimeConfig) (audit.Che
 	skills := filterAISkills(artifacts)
 	summary := CalculateAIContextSummary(artifacts, directories)
 	findings := aiContextFindings(artifacts, directories, summary)
+	manageable := manageableForAIArtifacts(artifacts, cfg)
+	manageable = append(manageable, manageableForAIDirectories(directories, cfg)...)
 	return audit.CheckResult{
 		Findings:             findings,
+		ManageableArtifacts:  manageable,
 		AIContextInventory:   artifacts,
 		AIRelatedDirectories: directories,
 		AISkills:             skills,
@@ -85,6 +88,18 @@ func candidateAIArtifacts(cfg audit.RuntimeConfig) []aiArtifactCandidate {
 	add(filepath.Join(home, ".codex"), "generic_context", "Codex", "user")
 	add(filepath.Join(home, ".codex", "config.toml"), "settings", "Codex", "user")
 	add(filepath.Join(home, ".codex", "instructions.md"), "instruction", "Codex", "user")
+	add(filepath.Join(home, ".gemini"), "generic_context", "Gemini", "user")
+	add(filepath.Join(home, ".gemini", "settings.json"), "settings", "Gemini", "user")
+	add(filepath.Join(home, ".gemini", "mcp.json"), "mcp_config", "Gemini", "user")
+	add(filepath.Join(home, ".gemini", "skills"), "skill", "Gemini", "user")
+	add(filepath.Join(home, ".gemini", "antigravity"), "generic_context", "Google Antigravity", "user")
+	add(filepath.Join(home, ".gemini", "antigravity", "mcp_config.json"), "mcp_config", "Google Antigravity", "user")
+	add(filepath.Join(home, ".gemini", "antigravity-cli"), "generic_context", "Google Antigravity", "user")
+	add(filepath.Join(home, ".gemini", "antigravity-cli", "settings.json"), "settings", "Google Antigravity", "user")
+	add(filepath.Join(home, ".gemini", "antigravity-cli", "mcp_config.json"), "mcp_config", "Google Antigravity", "user")
+	add(filepath.Join(home, ".gemini", "antigravity-cli", "plugins"), "tool_manifest", "Google Antigravity", "user")
+	add(filepath.Join(home, ".antigravity"), "generic_context", "Google Antigravity", "user")
+	add(filepath.Join(home, ".antigravity", "mcp.json"), "mcp_config", "Google Antigravity", "user")
 	add(filepath.Join(home, ".cursor"), "generic_context", "Cursor", "user")
 	add(filepath.Join(home, ".cursor", "rules"), "rule", "Cursor", "user")
 	add(filepath.Join(home, ".cursor", "mcp.json"), "mcp_config", "Cursor", "user")
@@ -128,6 +143,19 @@ func addProjectAIArtifacts(root string, out *[]aiArtifactCandidate) {
 	add("AGENTS.md", "instruction", "Codex")
 	add(filepath.Join(".codex"), "generic_context", "Codex")
 	add(filepath.Join(".codex", "instructions.md"), "instruction", "Codex")
+	add("GEMINI.md", "instruction", "Gemini")
+	add(filepath.Join(".gemini"), "generic_context", "Gemini")
+	add(filepath.Join(".gemini", "settings.json"), "settings", "Gemini")
+	add(filepath.Join(".gemini", "mcp.json"), "mcp_config", "Gemini")
+	add(filepath.Join(".gemini", "skills"), "skill", "Gemini")
+	add(filepath.Join(".agents"), "generic_context", "Google Antigravity")
+	add(filepath.Join(".agents", "mcp_config.json"), "mcp_config", "Google Antigravity")
+	add(filepath.Join(".agents", "skills"), "skill", "Google Antigravity")
+	add(filepath.Join(".agents", "rules"), "rule", "Google Antigravity")
+	add(filepath.Join(".agents", "agents"), "agent_manifest", "Google Antigravity")
+	add(filepath.Join(".antigravity"), "generic_context", "Google Antigravity")
+	add(filepath.Join(".antigravity", "mcp.json"), "mcp_config", "Google Antigravity")
+	add(filepath.Join(".antigravity", "mcp_config.json"), "mcp_config", "Google Antigravity")
 	add(filepath.Join(".cursor"), "generic_context", "Cursor")
 	add(filepath.Join(".cursor", "rules"), "rule", "Cursor")
 	add(filepath.Join(".cursor", "mcp.json"), "mcp_config", "Cursor")
@@ -400,6 +428,12 @@ func candidateAIDirectories(home string) []aiDirectoryCandidate {
 		{filepath.Join(home, ".claude", "skills"), "Claude", "skills"},
 		{filepath.Join(home, ".claude", "commands"), "Claude", "prompts"},
 		{filepath.Join(home, ".codex"), "Codex", "config"},
+		{filepath.Join(home, ".gemini"), "Gemini", "config"},
+		{filepath.Join(home, ".gemini", "skills"), "Gemini", "skills"},
+		{filepath.Join(home, ".gemini", "antigravity"), "Google Antigravity", "config"},
+		{filepath.Join(home, ".gemini", "antigravity-cli"), "Google Antigravity", "config"},
+		{filepath.Join(home, ".gemini", "antigravity-cli", "plugins"), "Google Antigravity", "extensions"},
+		{filepath.Join(home, ".antigravity"), "Google Antigravity", "config"},
 		{filepath.Join(home, ".cursor"), "Cursor", "config"},
 		{filepath.Join(home, ".cursor", "rules"), "Cursor", "rules"},
 		{filepath.Join(home, ".continue"), "Continue", "config"},
@@ -433,6 +467,7 @@ func candidateAIDirectories(home string) []aiDirectoryCandidate {
 		{filepath.Join(home, ".cache", "uv"), "uv", "cache"},
 		{filepath.Join(home, "Library", "Application Support", "Cursor"), "Cursor", "config"},
 		{filepath.Join(home, "Library", "Application Support", "Claude"), "Claude", "config"},
+		{filepath.Join(home, "Library", "Application Support", "Google Antigravity"), "Google Antigravity", "config"},
 		{filepath.Join(home, "Library", "Application Support", "Code"), "VS Code", "extensions"},
 		{filepath.Join(home, "Library", "Application Support", "Continue"), "Continue", "config"},
 		{filepath.Join(home, "Library", "Application Support", "Hermes"), "Hermes", "config"},
@@ -453,6 +488,7 @@ func candidateAIDirectories(home string) []aiDirectoryCandidate {
 		{filepath.Join(home, "Library", "Caches", "com.todesktop.230313mzl4w4u92"), "Cursor", "cache"},
 		{filepath.Join(home, "Library", "Caches", "Cursor"), "Cursor", "cache"},
 		{filepath.Join(home, "Library", "Caches", "Claude"), "Claude", "cache"},
+		{filepath.Join(home, "Library", "Caches", "Google Antigravity"), "Google Antigravity", "cache"},
 		{filepath.Join(home, "Library", "Caches", "LM Studio"), "LM Studio", "cache"},
 		{filepath.Join(home, "Library", "Caches", "Hermes"), "Hermes", "cache"},
 		{filepath.Join(home, "Library", "Caches", "Hermes Agent"), "Hermes", "cache"},
@@ -460,6 +496,7 @@ func candidateAIDirectories(home string) []aiDirectoryCandidate {
 		{filepath.Join(home, "Library", "Caches", "opencode"), "OpenCode", "cache"},
 		{filepath.Join(home, "Library", "Logs", "Cursor"), "Cursor", "logs"},
 		{filepath.Join(home, "Library", "Logs", "Claude"), "Claude", "logs"},
+		{filepath.Join(home, "Library", "Logs", "Google Antigravity"), "Google Antigravity", "logs"},
 		{filepath.Join(home, "Library", "Logs", "LM Studio"), "LM Studio", "logs"},
 		{filepath.Join(home, "Library", "Logs", "Hermes"), "Hermes", "logs"},
 		{filepath.Join(home, "Library", "Logs", "Hermes Agent"), "Hermes", "logs"},
@@ -543,7 +580,7 @@ func projectRoots(cfg audit.RuntimeConfig) []string {
 }
 
 func looksLikeProjectRoot(path string) bool {
-	markers := []string{".git", "go.mod", "package.json", "pyproject.toml", "Cargo.toml", "README.md", "AGENTS.md", "CLAUDE.md"}
+	markers := []string{".git", "go.mod", "package.json", "pyproject.toml", "Cargo.toml", "README.md", "AGENTS.md", "CLAUDE.md", "GEMINI.md"}
 	for _, marker := range markers {
 		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
 			return true
@@ -568,14 +605,16 @@ func classifyAIArtifactPath(path string, isDir bool) (string, string, bool) {
 			return "generic_context", tool, true
 		case "tools":
 			return "tool_manifest", tool, true
-		case ".claude", ".codex", ".cursor", ".continue", ".cline", ".roo", ".windsurf", ".open-interpreter", ".hermes", ".hermes-agent", ".opencode":
+		case "hooks":
+			return "tool_manifest", tool, true
+		case ".claude", ".codex", ".gemini", ".agents", ".antigravity", ".cursor", ".continue", ".cline", ".roo", ".windsurf", ".open-interpreter", ".hermes", ".hermes-agent", ".opencode":
 			return "generic_context", tool, true
 		default:
 			return "", "", false
 		}
 	}
 	switch base {
-	case "agents.md", "claude.md", "instructions.md", "copilot-instructions.md":
+	case "agents.md", "claude.md", "gemini.md", "instructions.md", "copilot-instructions.md":
 		return "instruction", tool, true
 	case "ai.md":
 		return "generic_context", tool, true
@@ -583,7 +622,7 @@ func classifyAIArtifactPath(path string, isDir bool) (string, string, bool) {
 		return "prompt", tool, true
 	case "rules.md", ".cursorrules", ".windsurfrules":
 		return "rule", tool, true
-	case "mcp.json":
+	case "mcp.json", "mcp.toml", "mcp.yaml", "mcp.yml", "mcp_config.json", "mcp_config.toml", "mcp_config.yaml", "mcp_config.yml":
 		return "mcp_config", tool, true
 	case "tool_manifest.json":
 		return "tool_manifest", tool, true
@@ -591,8 +630,10 @@ func classifyAIArtifactPath(path string, isDir bool) (string, string, bool) {
 		return "agent_manifest", tool, true
 	case "skill.json":
 		return "skill", tool, true
-	case "settings.json", "extensions.json", "config.toml", ".aider.conf.yml", ".aiderignore":
+	case "settings.json", "keybindings.json", "extensions.json", "config.toml", ".aider.conf.yml", ".aiderignore":
 		return "settings", tool, true
+	case "hooks.json":
+		return "tool_manifest", tool, true
 	case "hermes.json", "hermes.yaml", "hermes.yml", "hermes.toml", "hermes-agent.json", "hermes-agent.yaml", "opencode.json", "opencode.yaml", "opencode.yml", "opencode.toml", ".opencode.json", ".opencode.yaml":
 		return "settings", tool, true
 	default:
@@ -619,6 +660,10 @@ func detectAIToolName(path string) string {
 		return "Claude"
 	case strings.Contains(lower, ".codex") || strings.Contains(lower, "agents.md"):
 		return "Codex"
+	case strings.Contains(lower, "antigravity") || strings.Contains(lower, ".agents"):
+		return "Google Antigravity"
+	case strings.Contains(lower, ".gemini") || strings.Contains(lower, "gemini.md"):
+		return "Gemini"
 	case strings.Contains(lower, ".cursor") || strings.Contains(lower, ".cursorrules"):
 		return "Cursor"
 	case strings.Contains(lower, "copilot"):
@@ -657,14 +702,14 @@ func EstimateAutoLoadedLikelihood(path string, artifactType string, toolName str
 	if artifactType == "mcp_config" {
 		return "high"
 	}
-	if toolName == "Hermes" || toolName == "OpenCode" {
-		if artifactType == "skill" || artifactType == "memory" || artifactType == "agent_manifest" || artifactType == "prompt" || artifactType == "rule" {
+	if toolName == "Hermes" || toolName == "OpenCode" || toolName == "Google Antigravity" {
+		if artifactType == "skill" || artifactType == "memory" || artifactType == "agent_manifest" || artifactType == "prompt" || artifactType == "rule" || artifactType == "tool_manifest" {
 			return "high"
 		}
 	}
 	if scope == "project" {
 		switch base {
-		case "agents.md", "claude.md", ".cursorrules", "system_prompt.md":
+		case "agents.md", "claude.md", "gemini.md", ".cursorrules", "system_prompt.md":
 			return "critical"
 		case "copilot-instructions.md", "instructions.md", "rules.md", ".windsurfrules":
 			return "high"
@@ -672,12 +717,12 @@ func EstimateAutoLoadedLikelihood(path string, artifactType string, toolName str
 		if strings.Contains(lower, string(filepath.Separator)+".cursor"+string(filepath.Separator)+"rules") {
 			return "critical"
 		}
-		if strings.Contains(lower, string(filepath.Separator)+".continue") || strings.Contains(lower, string(filepath.Separator)+".cline") || strings.Contains(lower, string(filepath.Separator)+".roo") {
+		if strings.Contains(lower, string(filepath.Separator)+".gemini") || strings.Contains(lower, string(filepath.Separator)+".agents") || strings.Contains(lower, string(filepath.Separator)+".antigravity") || strings.Contains(lower, string(filepath.Separator)+".continue") || strings.Contains(lower, string(filepath.Separator)+".cline") || strings.Contains(lower, string(filepath.Separator)+".roo") {
 			return "high"
 		}
 	}
 	if scope == "user" {
-		if toolName == "Claude" || toolName == "Codex" || toolName == "Cursor" {
+		if toolName == "Claude" || toolName == "Codex" || toolName == "Gemini" || toolName == "Google Antigravity" || toolName == "Cursor" {
 			if artifactType == "instruction" || artifactType == "rule" || artifactType == "settings" || artifactType == "mcp_config" {
 				return "high"
 			}
@@ -708,7 +753,7 @@ func ClassifyAIContextImpact(path string, artifactType string, toolName string, 
 		return "critical", 90
 	}
 	if scope == "project" {
-		if base == "agents.md" || base == "claude.md" || base == ".cursorrules" {
+		if base == "agents.md" || base == "claude.md" || base == "gemini.md" || base == ".cursorrules" {
 			return "critical", 88
 		}
 		if strings.Contains(lower, string(filepath.Separator)+".cursor"+string(filepath.Separator)+"rules") {
@@ -717,17 +762,17 @@ func ClassifyAIContextImpact(path string, artifactType string, toolName string, 
 		if base == "instructions.md" || base == "rules.md" || base == "copilot-instructions.md" || base == ".windsurfrules" {
 			return "high", 75
 		}
-		if strings.Contains(lower, string(filepath.Separator)+".continue") || strings.Contains(lower, string(filepath.Separator)+".cline") || strings.Contains(lower, string(filepath.Separator)+".roo") {
+		if strings.Contains(lower, string(filepath.Separator)+".gemini") || strings.Contains(lower, string(filepath.Separator)+".agents") || strings.Contains(lower, string(filepath.Separator)+".antigravity") || strings.Contains(lower, string(filepath.Separator)+".continue") || strings.Contains(lower, string(filepath.Separator)+".cline") || strings.Contains(lower, string(filepath.Separator)+".roo") {
 			return "high", 68
 		}
 	}
-	if scope == "user" && (toolName == "Claude" || toolName == "Codex" || toolName == "Cursor") {
+	if scope == "user" && (toolName == "Claude" || toolName == "Codex" || toolName == "Gemini" || toolName == "Google Antigravity" || toolName == "Cursor") {
 		if artifactType == "instruction" || artifactType == "rule" || artifactType == "settings" || artifactType == "mcp_config" {
 			return "critical", 84
 		}
 	}
-	if toolName == "Hermes" || toolName == "OpenCode" {
-		if artifactType == "skill" || artifactType == "memory" || artifactType == "agent_manifest" || artifactType == "prompt" || artifactType == "rule" {
+	if toolName == "Hermes" || toolName == "OpenCode" || toolName == "Google Antigravity" {
+		if artifactType == "skill" || artifactType == "memory" || artifactType == "agent_manifest" || artifactType == "prompt" || artifactType == "rule" || artifactType == "tool_manifest" {
 			return "high", 72
 		}
 	}
@@ -769,11 +814,11 @@ func AIContextRecommendation(artifactType string, toolName string, impact string
 }
 
 func ClassifyAIDirectoryCategory(path string) string {
-	lower := strings.ToLower(path)
+	lower := strings.ReplaceAll(strings.ToLower(path), "\\", "/")
 	switch {
-	case strings.Contains(lower, string(filepath.Separator)+"caches"+string(filepath.Separator)):
+	case strings.Contains(lower, "/caches/"):
 		return "cache"
-	case strings.Contains(lower, string(filepath.Separator)+"logs"+string(filepath.Separator)):
+	case strings.Contains(lower, "/logs/"):
 		return "logs"
 	case strings.Contains(lower, "models") || strings.Contains(lower, ".ollama") || strings.Contains(lower, "lm studio") || strings.Contains(lower, "jan"):
 		return "models"
@@ -785,9 +830,9 @@ func ClassifyAIDirectoryCategory(path string) string {
 		return "prompts"
 	case strings.Contains(lower, "mcp"):
 		return "mcp"
-	case strings.Contains(lower, "extensions") || strings.Contains(lower, "application support/code"):
+	case strings.Contains(lower, "plugins") || strings.Contains(lower, "extensions") || strings.Contains(lower, "application support/code"):
 		return "extensions"
-	case strings.Contains(lower, ".claude") || strings.Contains(lower, ".codex") || strings.Contains(lower, ".cursor") || strings.Contains(lower, ".continue") || strings.Contains(lower, ".cline") || strings.Contains(lower, ".roo") || strings.Contains(lower, ".windsurf") || strings.Contains(lower, ".hermes") || strings.Contains(lower, ".opencode"):
+	case strings.Contains(lower, ".claude") || strings.Contains(lower, ".codex") || strings.Contains(lower, ".gemini") || strings.Contains(lower, ".agents") || strings.Contains(lower, ".antigravity") || strings.Contains(lower, ".cursor") || strings.Contains(lower, ".continue") || strings.Contains(lower, ".cline") || strings.Contains(lower, ".roo") || strings.Contains(lower, ".windsurf") || strings.Contains(lower, ".hermes") || strings.Contains(lower, ".opencode"):
 		return "config"
 	default:
 		return "unknown"

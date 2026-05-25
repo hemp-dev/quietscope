@@ -45,3 +45,11 @@ When you report a vulnerability, we promise to:
 As `quietscope` is a local-only auditing tool:
 - Vulnerabilities that require full root system access already present on the host to exploit quietscope are considered low severity.
 - Modifying standard system settings or deleting files via `--clean-confirm` when explicitly authorized by the user is the intended behavior and is out of scope unless it deletes directories outside the strictly defined allowlist.
+
+## AI Control Center Boundaries
+
+- AI Control Center mutations are local-only and require preview/diff plus a backup before write, delete, disable, cleanup, or restore.
+- Secret-bearing paths are not readable or manageable: `.env` files, SSH/private keys, Keychain data, cloud credential directories, and known browser/mail/message stores remain blocked.
+- MCP configs are parsed structurally for JSON, TOML, and YAML. Quietscope never executes discovered MCP commands, scripts, hooks, or package launchers.
+- Environment maps are treated as key-name metadata. UI/API responses redact sensitive-looking values and expose env key names only.
+- Local model directories are inventory/manual-review items. They are not auto-cleaned by default and destructive model deletion should be performed outside Quietscope after separate review.

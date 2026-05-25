@@ -57,8 +57,18 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .log{border:1px solid var(--line);border-radius:8px;background:#0d120f;color:#d6f5df;min-height:210px;max-height:390px;overflow:auto;padding:10px;font-size:12px;white-space:pre-wrap}
 @media (prefers-color-scheme:light){.log{background:#121a15;color:#d9f7df}}
 .empty{color:var(--muted);padding:16px}
+.control{margin-top:14px}
+.control-tools{padding:12px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;border-bottom:1px solid var(--line)}
+.control-tools input,.control-tools select{width:100%;min-height:32px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);padding:5px 7px}
+.control-table{width:100%;border-collapse:collapse;font-size:12px}
+.control-table th,.control-table td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+.control-table th{color:var(--muted);font-size:11px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal-card{width:min(920px,96vw);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.diff{white-space:pre-wrap;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:10px;max-height:380px;overflow:auto}
 @media (max-width:980px){main,.layout{grid-template-columns:1fr}.statusbar{grid-template-columns:repeat(2,minmax(0,1fr))}.jobs{max-height:320px}}
-@media (max-width:560px){header,main{padding-left:14px;padding-right:14px}.top{display:grid}.checks,.statusbar,.meta{grid-template-columns:1fr}.version{width:max-content}}
+@media (max-width:980px){.control-tools{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){header,main{padding-left:14px;padding-right:14px}.top{display:grid}.checks,.statusbar,.meta,.control-tools{grid-template-columns:1fr}.version{width:max-content}}
 </style>
 </head>
 <body>
@@ -108,16 +118,34 @@ button:disabled{opacity:.55;cursor:not-allowed}
         <div id="detail" class="detail"><div class="empty">Select or start an audit.</div></div>
       </section>
     </div>
+    <section class="panel control">
+      <h2>AI Control Center</h2>
+      <div class="control-tools">
+        <input id="artifact-search" type="search" placeholder="Search artifacts">
+        <select id="artifact-tool"><option value="">All tools</option></select>
+        <select id="artifact-kind"><option value="">All kinds</option></select>
+        <select id="artifact-scope"><option value="">All scopes</option></select>
+        <select id="artifact-action"><option value="">All actions</option><option value="available">Available</option><option value="blocked">Blocked</option></select>
+      </div>
+      <div style="overflow:auto">
+        <table class="control-table">
+          <thead><tr><th>Tool</th><th>Kind</th><th>Scope</th><th>Risk</th><th>Path</th><th>Actions</th></tr></thead>
+          <tbody id="artifacts"><tr><td colspan="6" class="empty">Run an AI audit to populate manageable artifacts.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
   </section>
 </main>
+<div id="action-modal" class="modal"><div class="modal-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2 id="modal-title" style="border:0;padding:0">Preview</h2><button id="modal-close" type="button">Close</button></div><div id="modal-body"></div></div></div>
 <script>
 (function(){
   "use strict";
   const token = "{{.Token}}";
   sessionStorage.setItem("quietscope_ui_token", token);
-  const state = { jobs: [], selected: "" };
+  const state = { jobs: [], selected: "", artifacts: [], lastPreview: null };
   const $ = (id) => document.getElementById(id);
   function text(v){ return v === null || v === undefined || v === "" ? "-" : String(v); }
+  function escapeHTML(v){ return text(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
   function cls(v){ return String(v||"").toLowerCase(); }
   function latestEvent(job){ const events = job.events || []; return events.length ? events[events.length - 1] : null; }
   function progress(job){
@@ -202,13 +230,112 @@ button:disabled{opacity:.55;cursor:not-allowed}
     const log = document.createElement("div"); log.className = "log"; log.textContent = (job.events || []).map(eventLine).join("\n") || "Waiting for progress events.";
     box.append(head,prog,actions,meta,log);
   }
-  function render(){ renderStatus(); renderJobs(); renderDetail(); }
+  function actionFor(artifact, action){ return (artifact.safe_actions || []).find(a=>a.action === action) || {available:false, disabled_reason:"Unsupported action"}; }
+  function artifactButton(artifact, action, label){
+    const availability = actionFor(artifact, action);
+    const disabled = !availability.available;
+    const title = disabled ? (availability.disabled_reason || artifact.disabled_reason || "Unavailable") : "Preview changes; backup will be created before write.";
+    return '<button type="button" ' + (disabled ? 'disabled ' : '') + 'title="' + escapeHTML(title) + '" onclick="window.previewArtifactAction(\'' + artifact.id.replace(/'/g,"\\'") + '\',\'' + action + '\')">' + label + '</button>';
+  }
+  function fillArtifactFilters(){
+    [["artifact-tool","tool"],["artifact-kind","kind"],["artifact-scope","scope"]].forEach(([id,key])=>{
+      const el=$(id); if(!el || el.dataset.ready === "1") return;
+      const values = Array.from(new Set(state.artifacts.map(a=>a[key]).filter(Boolean))).sort();
+      values.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
+      el.dataset.ready = "1";
+    });
+  }
+  function filteredArtifacts(){
+    const q = $("artifact-search").value.toLowerCase();
+    const tool = $("artifact-tool").value;
+    const kind = $("artifact-kind").value;
+    const scope = $("artifact-scope").value;
+    const action = $("artifact-action").value;
+    return state.artifacts.filter(a=>{
+      if(q && !JSON.stringify(a).toLowerCase().includes(q)) return false;
+      if(tool && a.tool !== tool) return false;
+      if(kind && a.kind !== kind) return false;
+      if(scope && a.scope !== scope) return false;
+      const hasAvailable = (a.safe_actions || []).some(x=>x.available);
+      if(action === "available" && !hasAvailable) return false;
+      if(action === "blocked" && hasAvailable) return false;
+      return true;
+    });
+  }
+  function renderArtifacts(){
+    fillArtifactFilters();
+    const body = $("artifacts"); body.textContent = "";
+    const rows = filteredArtifacts();
+    if(!rows.length){ body.innerHTML = '<tr><td colspan="6" class="empty">No matching manageable artifacts.</td></tr>'; return; }
+    rows.forEach(a=>{
+      const tr=document.createElement("tr");
+      const actions = ["read","edit","disable","enable","fix","clean","delete","restore"].map(x=>artifactButton(a,x,x)).join(" ");
+      [a.tool,a.kind,a.scope,a.risk,a.path,actions].forEach((v,i)=>{ const td=document.createElement("td"); if(i===5) td.innerHTML=v; else td.textContent=text(v); tr.appendChild(td); });
+      body.appendChild(tr);
+    });
+  }
+  function render(){ renderStatus(); renderJobs(); renderDetail(); renderArtifacts(); }
   async function refresh(){
     const res = await fetch("/api/audits", {cache:"no-store"});
     state.jobs = await res.json();
     if(!state.selected && state.jobs[0]) state.selected = state.jobs[0].id;
+    await refreshArtifacts();
     render();
   }
+  async function refreshArtifacts(){
+    try {
+      const job = state.jobs.find(j=>j.id === state.selected) || state.jobs[0];
+      const url = job ? "/api/artifacts?job_id=" + encodeURIComponent(job.id) : "/api/artifacts";
+      const res = await fetch(url, {cache:"no-store"});
+      if(!res.ok) return;
+      state.artifacts = await res.json();
+      ["artifact-tool","artifact-kind","artifact-scope"].forEach(id=>{ const el=$(id); if(el){ while(el.options.length>1) el.remove(1); el.dataset.ready=""; } });
+    } catch (_) {}
+  }
+  async function postAction(endpoint, payload){
+    const res = await fetch(endpoint, {method:"POST", headers:{"Content-Type":"application/json","X-Audit-Token":token}, body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+  function artifactById(id){ return state.artifacts.find(a=>a.id === id); }
+  window.previewArtifactAction = async function(id, action){
+    const artifact = artifactById(id); if(!artifact) return;
+    const payload = {job_id: state.selected, action, path: artifact.path, artifact_id: artifact.id};
+    if(artifact.kind === "mcp_server") payload.server_name = artifact.tool;
+    const modal=$("action-modal"), body=$("modal-body"); modal.style.display="flex"; $("modal-title").textContent="Preview " + action; body.innerHTML='<div class="empty">Preview changes</div>';
+    try {
+      if(action === "edit" && artifact.kind !== "mcp_server"){
+        const read = await postAction("/api/actions/preview", {...payload, action:"read"});
+        body.innerHTML='<textarea id="edit-content" style="width:100%;min-height:260px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:monospace">' + escapeHTML(read.content || "") + '</textarea><pre id="action-diff" class="diff"></pre><div class="actions" style="justify-content:flex-end;margin-top:10px"><button type="button" onclick="window.previewEdit(\'' + id.replace(/'/g,"\\'") + '\')">Preview changes</button><button class="primary" type="button" onclick="window.executeEdit(\'' + id.replace(/'/g,"\\'") + '\')">Apply with backup</button></div>';
+        return;
+      }
+      if(action === "edit" && artifact.kind === "mcp_server"){
+        const patch = window.prompt("Enter JSON fields to update on this MCP server", "{\"disabled\":true}");
+        if(!patch){ modal.style.display="none"; return; }
+        payload.server_config = JSON.parse(patch);
+      }
+      const preview = await postAction("/api/actions/preview", payload);
+      state.lastPreview = payload;
+      body.innerHTML='<pre class="diff">' + escapeHTML(preview.diff || preview.message || "No changes") + '</pre><p class="notice">Backup will be created before execution.</p><div class="actions" style="justify-content:flex-end"><button class="primary" type="button" onclick="window.executePreview()">Execute with backup</button></div>';
+    } catch(err) {
+      body.innerHTML='<div class="empty">Parser failed, manual review required: ' + escapeHTML(String(err)) + '</div>';
+    }
+  };
+  window.previewEdit = async function(id){
+    const artifact = artifactById(id); const content=$("edit-content").value;
+    const preview = await postAction("/api/actions/preview", {job_id:state.selected, action:"edit", path:artifact.path, artifact_id:artifact.id, content});
+    $("action-diff").textContent = preview.diff || preview.message || "";
+  };
+  window.executeEdit = async function(id){
+    const artifact = artifactById(id); const content=$("edit-content").value;
+    await postAction("/api/actions/execute", {job_id:state.selected, action:"edit", path:artifact.path, artifact_id:artifact.id, content});
+    $("action-modal").style.display="none"; await refresh();
+  };
+  window.executePreview = async function(){
+    if(!state.lastPreview) return;
+    await postAction("/api/actions/execute", state.lastPreview);
+    $("action-modal").style.display="none"; await refresh();
+  };
   async function startAudit(evt){
     evt.preventDefault();
     const payload = {
@@ -245,6 +372,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
   }
   $("audit-form").addEventListener("submit", startAudit);
   $("refresh").addEventListener("click", refresh);
+  $("modal-close").addEventListener("click", () => { $("action-modal").style.display = "none"; });
+  ["artifact-search","artifact-tool","artifact-kind","artifact-scope","artifact-action"].forEach(id=>$(id).addEventListener("input", renderArtifacts));
   refresh();
   setInterval(refresh, 1500);
 })();

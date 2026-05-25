@@ -42,7 +42,8 @@ func TestParseMCPConfig(t *testing.T) {
 	path := filepath.Join(dir, "mcp.json")
 	body := map[string]any{
 		"mcpServers": map[string]any{
-			"demo": map[string]any{"command": "npx", "args": []string{"demo-server@1.2.3"}},
+			"demo":   map[string]any{"command": "npx", "args": []string{"demo-server@1.2.3"}},
+			"remote": map[string]any{"serverUrl": "https://mcp.example.invalid/sse", "transport": "sse"},
 		},
 	}
 	data, _ := json.Marshal(body)
@@ -53,8 +54,21 @@ func TestParseMCPConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(commands) != 1 || commands[0].Name != "demo" || commands[0].Command != "npx" {
+	if len(commands) != 2 {
 		t.Fatalf("unexpected parsed commands: %#v", commands)
+	}
+	foundDemo := false
+	foundRemote := false
+	for _, cmd := range commands {
+		if cmd.Name == "demo" && cmd.Command == "npx" {
+			foundDemo = true
+		}
+		if cmd.Name == "remote" && cmd.URL == "https://mcp.example.invalid/sse" {
+			foundRemote = true
+		}
+	}
+	if !foundDemo || !foundRemote {
+		t.Fatalf("expected demo command and remote serverUrl command, got %#v", commands)
 	}
 }
 
@@ -62,9 +76,9 @@ func TestCrossPlatformAIConfigCandidates(t *testing.T) {
 	cfg := audit.RuntimeConfig{HomeDir: "/home/alice"}
 	linuxPaths := strings.Join(aiConfigPathsForOS("linux", cfg), "\n")
 	for _, expected := range []string{
-		"/home/alice/.config/Code",
-		"/home/alice/.config/Cursor",
-		"/home/alice/.opencode",
+		filepath.FromSlash("/home/alice/.config/Code"),
+		filepath.FromSlash("/home/alice/.config/Cursor"),
+		filepath.FromSlash("/home/alice/.opencode"),
 	} {
 		if !strings.Contains(linuxPaths, expected) {
 			t.Fatalf("expected Linux AI config path %s in %s", expected, linuxPaths)
@@ -79,6 +93,32 @@ func TestCrossPlatformAIConfigCandidates(t *testing.T) {
 	} {
 		if !strings.Contains(windowsPaths, expected) {
 			t.Fatalf("expected Windows MCP path %s in %s", expected, windowsPaths)
+		}
+	}
+}
+
+func TestGeminiAntigravityConfigCandidates(t *testing.T) {
+	cfg := audit.RuntimeConfig{HomeDir: "/Users/alice", ProjectRoot: "/work/repo"}
+	configPaths := strings.Join(aiConfigPathsForOS("darwin", cfg), "\n")
+	for _, expected := range []string{
+		filepath.FromSlash("/Users/alice/.gemini/settings.json"),
+		filepath.FromSlash("/Users/alice/.gemini/antigravity-cli/mcp_config.json"),
+		filepath.FromSlash("/work/repo/.agents/mcp_config.json"),
+		filepath.FromSlash("/work/repo/.gemini/settings.json"),
+	} {
+		if !strings.Contains(configPaths, expected) {
+			t.Fatalf("expected Gemini/Antigravity config path %s in %s", expected, configPaths)
+		}
+	}
+
+	mcpPaths := strings.Join(candidateMCPPathsForOS("darwin", cfg), "\n")
+	for _, expected := range []string{
+		filepath.FromSlash("/Users/alice/.gemini/antigravity/mcp_config.json"),
+		filepath.FromSlash("/Users/alice/.gemini/antigravity-cli/mcp_config.json"),
+		filepath.FromSlash("/work/repo/.agents/mcp_config.json"),
+	} {
+		if !strings.Contains(mcpPaths, expected) {
+			t.Fatalf("expected Gemini/Antigravity MCP path %s in %s", expected, mcpPaths)
 		}
 	}
 }
@@ -134,6 +174,19 @@ func TestScanConfigForAutoApproval(t *testing.T) {
 	reason, sev := scanConfigForAutoApproval("settings.json", data)
 	if reason == "" || sev != audit.SeverityHigh {
 		t.Fatalf("expected auto-approval warning, got reason=%q sev=%s", reason, sev)
+	}
+}
+
+func TestScanGeminiAntigravityApprovalWeakening(t *testing.T) {
+	data := []byte(`{
+		"permissions": {
+			"defaultMode": "always-proceed"
+		},
+		"defaultApprovalMode": "yolo"
+	}`)
+	reason, sev := scanConfigForAutoApproval("settings.json", data)
+	if reason == "" || sev != audit.SeverityHigh {
+		t.Fatalf("expected Gemini/Antigravity approval warning, got reason=%q sev=%s", reason, sev)
 	}
 }
 

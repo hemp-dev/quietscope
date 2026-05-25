@@ -66,6 +66,40 @@ type CleanupCandidate struct {
 	FindingID          string `json:"finding_id,omitempty"`
 }
 
+type ArtifactAction string
+
+const (
+	ArtifactActionRead    ArtifactAction = "read"
+	ArtifactActionEdit    ArtifactAction = "edit"
+	ArtifactActionDisable ArtifactAction = "disable"
+	ArtifactActionEnable  ArtifactAction = "enable"
+	ArtifactActionDelete  ArtifactAction = "delete"
+	ArtifactActionFix     ArtifactAction = "fix"
+	ArtifactActionRestore ArtifactAction = "restore"
+	ArtifactActionClean   ArtifactAction = "clean"
+)
+
+type ActionAvailability struct {
+	Action          ArtifactAction `json:"action"`
+	Available       bool           `json:"available"`
+	DisabledReason  string         `json:"disabled_reason,omitempty"`
+	RequiresPreview bool           `json:"requires_preview"`
+	RequiresBackup  bool           `json:"requires_backup"`
+}
+
+type ManageableArtifact struct {
+	ID              string               `json:"id"`
+	Path            string               `json:"path"`
+	Tool            string               `json:"tool"`
+	Kind            string               `json:"kind"`
+	Scope           string               `json:"scope"`
+	Risk            string               `json:"risk"`
+	SafeActions     []ActionAvailability `json:"safe_actions"`
+	DisabledReason  string               `json:"disabled_reason,omitempty"`
+	LiveOnly        bool                 `json:"live_only"`
+	BackupAvailable bool                 `json:"backup_available"`
+}
+
 type AIToolInfo struct {
 	Name     string `json:"name"`
 	Kind     string `json:"kind"`
@@ -308,6 +342,7 @@ type Report struct {
 	Summary              Summary                     `json:"summary"`
 	Findings             []Finding                   `json:"findings"`
 	CleanupCandidates    []CleanupCandidate          `json:"cleanup_candidates"`
+	ManageableArtifacts  []ManageableArtifact        `json:"manageable_artifacts"`
 	AISecurity           AISecuritySummary           `json:"ai_security"`
 	AIContextInventory   []AIContextArtifact         `json:"ai_context_inventory"`
 	AIRelatedDirectories []AIRelatedDirectory        `json:"ai_related_directories"`
@@ -329,6 +364,7 @@ type CheckResult struct {
 	SystemInfo           map[string]string
 	Findings             []Finding
 	CleanupCandidates    []CleanupCandidate
+	ManageableArtifacts  []ManageableArtifact
 	AISecurity           AISecuritySummary
 	AIContextInventory   []AIContextArtifact
 	AIRelatedDirectories []AIRelatedDirectory
@@ -354,6 +390,7 @@ func (r *CheckResult) Merge(next CheckResult) {
 	}
 	r.Findings = append(r.Findings, next.Findings...)
 	r.CleanupCandidates = append(r.CleanupCandidates, next.CleanupCandidates...)
+	r.ManageableArtifacts = append(r.ManageableArtifacts, next.ManageableArtifacts...)
 	r.AISecurity.InstalledTools = append(r.AISecurity.InstalledTools, next.AISecurity.InstalledTools...)
 	r.AISecurity.MCPConfigs = append(r.AISecurity.MCPConfigs, next.AISecurity.MCPConfigs...)
 	r.AISecurity.LocalServers = append(r.AISecurity.LocalServers, next.AISecurity.LocalServers...)
@@ -390,6 +427,23 @@ func (r *CheckResult) Merge(next CheckResult) {
 	r.AIProviderSummary.RemoteProviderEnvKeysDetected += next.AIProviderSummary.RemoteProviderEnvKeysDetected
 	r.AIProviderSummary.LocalModelCacheSizeBytes += next.AIProviderSummary.LocalModelCacheSizeBytes
 	r.AIProviderSummary.NonLoopbackAIServers += next.AIProviderSummary.NonLoopbackAIServers
+}
+
+func DedupeManageableArtifacts(artifacts []ManageableArtifact) []ManageableArtifact {
+	seen := map[string]bool{}
+	out := make([]ManageableArtifact, 0, len(artifacts))
+	for _, artifact := range artifacts {
+		key := artifact.ID
+		if key == "" {
+			key = artifact.Path + "|" + artifact.Kind + "|" + artifact.Tool
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, artifact)
+	}
+	return out
 }
 
 type RuntimeConfig struct {

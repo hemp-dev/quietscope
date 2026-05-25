@@ -60,7 +60,11 @@ func RunCleanup(ctx context.Context, cfg audit.RuntimeConfig) (audit.CheckResult
 		}
 		findings = append(findings, newFinding("cleanup-summary", audit.CategoryCleanup, "Safe cleanup dry-run summary", audit.StatusInfo, audit.SeverityInfo, fmt.Sprintf("%d safe candidate(s), estimated reclaimable %s", len(candidates), platform.HumanBytes(total)), "Cleanup is never automatic. Review candidates before using --clean-confirm.", ""))
 	}
-	return audit.CheckResult{Findings: findings, CleanupCandidates: candidates}, nil
+	return audit.CheckResult{
+		Findings:            findings,
+		CleanupCandidates:   candidates,
+		ManageableArtifacts: manageableForCleanupCandidates(candidates, cfg),
+	}, nil
 }
 
 type cleanupRoot struct {

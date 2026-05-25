@@ -44,6 +44,48 @@ func TestWriteHTMLEmbedsAuditDataAsJSONObject(t *testing.T) {
 	}
 }
 
+func TestWriteHTMLRendersAIControlCenterStaticActions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "report.html")
+	want := audit.Report{
+		Metadata: audit.Metadata{ToolName: "quietscope", Version: "test"},
+		ManageableArtifacts: []audit.ManageableArtifact{{
+			ID:       "agent-md",
+			Path:     filepath.Join(dir, "AGENTS.md"),
+			Tool:     "Codex",
+			Kind:     "instruction",
+			Scope:    "project",
+			Risk:     "high",
+			LiveOnly: true,
+			SafeActions: []audit.ActionAvailability{{
+				Action:          audit.ArtifactActionEdit,
+				Available:       true,
+				RequiresPreview: true,
+				RequiresBackup:  true,
+			}},
+		}},
+	}
+	if err := WriteHTML(path, want); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(body)
+	for _, needle := range []string{
+		"AI Control Center",
+		"Disabled in static report",
+		"/api/actions/preview",
+		"Backup will be created",
+		"control-skills-body",
+	} {
+		if !strings.Contains(html, needle) {
+			t.Fatalf("expected HTML to contain %q", needle)
+		}
+	}
+}
+
 func extractAuditDataPayload(t *testing.T, html string) string {
 	t.Helper()
 	startToken := `<script type="application/json" id="audit-data">`

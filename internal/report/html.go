@@ -1159,6 +1159,10 @@ details.evidence-box pre {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
         AI Tool Catalog
       </a>
+      <a href="#control-center" class="nav-link" onclick="activateLink(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        AI Control Center
+      </a>
       <a href="#cleanup" class="nav-link" onclick="activateLink(this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         Storage & Cleanup
@@ -1595,6 +1599,70 @@ details.evidence-box pre {
       <div id="ai-security-tools-section" class="section-cards"></div>
     </section>
 
+    <!-- AI Control Center -->
+    <section id="control-center">
+      <h2 class="section-title">AI Control Center</h2>
+      <div class="highlight-box">
+        Manageable skills, guides, rules, prompts, MCP server entries, caches, and models are listed here. Static reports show the same actions disabled; local-server mode enables preview, diff, backup, and restore flows.
+      </div>
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label for="control-tool">Tool</label>
+          <select id="control-tool"><option value="">All Tools</option></select>
+        </div>
+        <div class="filter-group">
+          <label for="control-kind">Kind</label>
+          <select id="control-kind"><option value="">All Kinds</option></select>
+        </div>
+        <div class="filter-group">
+          <label for="control-scope">Scope</label>
+          <select id="control-scope"><option value="">All Scopes</option></select>
+        </div>
+        <div class="filter-group">
+          <label for="control-risk">Risk</label>
+          <select id="control-risk"><option value="">All Risks</option></select>
+        </div>
+        <div class="filter-group">
+          <label for="control-action">Action Availability</label>
+          <select id="control-action">
+            <option value="">All</option>
+            <option value="available">Available in local UI</option>
+            <option value="blocked">Blocked / manual</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Skills, Guides, Rules & Prompts</h3>
+      <div class="table-container">
+        <table class="responsive-table">
+          <thead>
+            <tr><th>Tool</th><th>Kind</th><th>Scope</th><th>Risk</th><th>Path</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="control-skills-body"></tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size: 15px; font-weight: 700; margin-top: 32px; margin-bottom: 12px;">MCP Servers</h3>
+      <div class="table-container">
+        <table class="responsive-table">
+          <thead>
+            <tr><th>Server</th><th>Scope</th><th>Risk</th><th>Config Path</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="control-mcp-body"></tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size: 15px; font-weight: 700; margin-top: 32px; margin-bottom: 12px;">Caches & Models</h3>
+      <div class="table-container">
+        <table class="responsive-table">
+          <thead>
+            <tr><th>Tool</th><th>Kind</th><th>Scope</th><th>Policy</th><th>Path</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="control-storage-body"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- Storage and Cleanup Candidates -->
     <section id="cleanup">
       <h2 class="section-title">Storage & Reclaimable Caches</h2>
@@ -1679,6 +1747,10 @@ details.evidence-box pre {
 
   function text(value) { 
     return value === null || value === undefined ? "" : String(value); 
+  }
+
+  function escapeHTML(value) {
+    return text(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
   function bytes(n) { 
@@ -1852,6 +1924,10 @@ details.evidence-box pre {
   fillSelect("catalog-category", (data.ai_tool_catalog || []).flatMap(t => t.categories || []));
   fillSelect("catalog-vendor", (data.ai_tool_catalog || []).map(t => t.vendor).concat((data.chinese_ai_providers || []).map(p => p.vendor)));
   fillSelect("provider-family", (data.chinese_ai_providers || []).flatMap(p => p.families || []));
+  fillSelect("control-tool", (data.manageable_artifacts || []).map(a => a.tool));
+  fillSelect("control-kind", (data.manageable_artifacts || []).map(a => a.kind));
+  fillSelect("control-scope", (data.manageable_artifacts || []).map(a => a.scope));
+  fillSelect("control-risk", (data.manageable_artifacts || []).map(a => a.risk));
 
   // Multi-faceted search and dynamic filtering execution
   function getFilteredFindings() {
@@ -2324,6 +2400,154 @@ details.evidence-box pre {
     }
   }
 
+  function getAction(artifact, action) {
+    return (artifact.safe_actions || []).find(a => a.action === action) || { action, available: false, disabled_reason: "Action is not supported" };
+  }
+
+  function controlActionButton(artifact, action, label) {
+    const availability = getAction(artifact, action);
+    const disabled = !isLocalServer || !availability.available;
+    const reason = !isLocalServer ? "Disabled in static report" : (availability.disabled_reason || artifact.disabled_reason || "");
+    const title = disabled ? reason : "Preview changes. Backup will be created before write.";
+    return '<button type="button" class="btn ' + (action === "delete" || action === "clean" ? "danger" : "secondary") + '" style="padding: 3px 7px; font-size: 10px; height: auto;" title="' + masked(title).replace(/"/g, "&quot;") + '" ' + (disabled ? "disabled" : "") + ' onclick="window.openControlAction(\'' + artifact.id.replace(/'/g, "\\'") + '\', \'' + action + '\')">' + label + '</button>';
+  }
+
+  function filteredControlArtifacts() {
+    const tool = $("control-tool") ? $("control-tool").value : "";
+    const kind = $("control-kind") ? $("control-kind").value : "";
+    const scope = $("control-scope") ? $("control-scope").value : "";
+    const risk = $("control-risk") ? $("control-risk").value : "";
+    const actionFilter = $("control-action") ? $("control-action").value : "";
+    return (data.manageable_artifacts || []).filter(a => {
+      if (tool && a.tool !== tool) return false;
+      if (kind && a.kind !== kind) return false;
+      if (scope && a.scope !== scope) return false;
+      if (risk && a.risk !== risk) return false;
+      const hasAvailable = (a.safe_actions || []).some(x => x.available);
+      if (actionFilter === "available" && !hasAvailable) return false;
+      if (actionFilter === "blocked" && hasAvailable) return false;
+      return true;
+    });
+  }
+
+  function renderControlCenter() {
+    const skillsBody = $("control-skills-body");
+    const mcpBody = $("control-mcp-body");
+    const storageBody = $("control-storage-body");
+    if (!skillsBody || !mcpBody || !storageBody) return;
+    skillsBody.textContent = "";
+    mcpBody.textContent = "";
+    storageBody.textContent = "";
+
+    filteredControlArtifacts().forEach(a => {
+      const tr = document.createElement("tr");
+      const actionHTML = [
+        controlActionButton(a, "read", "Read"),
+        controlActionButton(a, "edit", "Edit"),
+        controlActionButton(a, "disable", "Disable"),
+        controlActionButton(a, "enable", "Enable"),
+        controlActionButton(a, "fix", "Fix"),
+        controlActionButton(a, "clean", "Clean"),
+        controlActionButton(a, "delete", "Delete"),
+        controlActionButton(a, "restore", "Restore")
+      ].join(" ");
+      if (a.kind === "mcp_server") {
+        [a.tool, a.scope, a.risk, masked(a.path), actionHTML].forEach((v, idx) => {
+          const td = document.createElement("td");
+          if (idx === 4) td.innerHTML = v; else td.textContent = text(v);
+          tr.appendChild(td);
+        });
+        mcpBody.appendChild(tr);
+      } else if (a.kind === "cache" || a.kind === "logs" || a.kind === "model") {
+        [a.tool, a.kind, a.scope, a.disabled_reason || (a.kind === "model" ? "Manual-only model directory" : "Cleanable with backup"), masked(a.path), actionHTML].forEach((v, idx) => {
+          const td = document.createElement("td");
+          if (idx === 5) td.innerHTML = v; else td.textContent = text(v);
+          tr.appendChild(td);
+        });
+        storageBody.appendChild(tr);
+      } else {
+        [a.tool, a.kind, a.scope, a.risk, masked(a.path), actionHTML].forEach((v, idx) => {
+          const td = document.createElement("td");
+          if (idx === 5) td.innerHTML = v; else td.textContent = text(v);
+          tr.appendChild(td);
+        });
+        skillsBody.appendChild(tr);
+      }
+    });
+  }
+
+  function ensureControlModal() {
+    let modal = $("control-modal");
+    if (modal) return modal;
+    modal = document.createElement("div");
+    modal.id = "control-modal";
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;";
+    modal.innerHTML = '<div style="width:min(960px,96vw);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;"><h3 id="control-modal-title" style="margin:0;font-size:16px;">Preview changes</h3><button type="button" class="btn secondary" onclick="document.getElementById(\'control-modal\').style.display=\'none\'">Close</button></div><div id="control-modal-body"></div></div>';
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  async function postControlAction(endpoint, payload) {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Audit-Token": token },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  window.openControlAction = async function(id, action) {
+    const artifact = (data.manageable_artifacts || []).find(a => a.id === id);
+    if (!artifact) return;
+    const payload = { action, path: artifact.path, artifact_id: artifact.id };
+    if (artifact.kind === "mcp_server") payload.server_name = artifact.tool;
+    const modal = ensureControlModal();
+    const body = $("control-modal-body");
+    modal.style.display = "flex";
+    body.innerHTML = '<div class="offline-notice">Preview changes</div>';
+    try {
+      if (action === "edit" && artifact.kind !== "mcp_server") {
+        const read = await postControlAction("/api/actions/preview", { action: "read", path: artifact.path, artifact_id: artifact.id });
+        $("control-modal-title").textContent = "Edit artifact";
+        body.innerHTML = '<p style="color:var(--muted);font-size:12px;">Preview changes before saving. Backup will be created.</p><textarea id="control-edit-text" style="width:100%;min-height:300px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:monospace;">' + escapeHTML(read.content || "") + '</textarea><pre id="control-diff" style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;max-height:260px;overflow:auto;"></pre><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;"><button type="button" class="btn secondary" onclick="window.previewControlEdit(\'' + id.replace(/'/g, "\\'") + '\')">Preview changes</button><button type="button" class="btn primary" onclick="window.executeControlEdit(\'' + id.replace(/'/g, "\\'") + '\')">Apply with backup</button></div>';
+        return;
+      }
+      if (action === "edit" && artifact.kind === "mcp_server") {
+        payload.server_config = {};
+        const patch = window.prompt("Enter a JSON object with server fields to update. Example: {\"disabled\":true}", "{\"disabled\":true}");
+        if (!patch) { modal.style.display = "none"; return; }
+        payload.server_config = JSON.parse(patch);
+      }
+      const preview = await postControlAction("/api/actions/preview", payload);
+      $("control-modal-title").textContent = "Preview " + action;
+      body.innerHTML = '<pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;max-height:420px;overflow:auto;">' + escapeHTML(preview.diff || preview.message || "No changes") + '</pre><p style="color:var(--muted);font-size:12px;">Backup will be created before execution.</p><div style="display:flex;gap:8px;justify-content:flex-end;"><button type="button" class="btn primary" onclick=\'window.executeControlAction(' + JSON.stringify(payload).replace(/'/g, "&#39;") + ')\'>Execute with backup</button></div>';
+    } catch (err) {
+      body.innerHTML = '<div class="offline-notice">Parser failed, manual review required: ' + escapeHTML(String(err)) + '</div>';
+    }
+  };
+
+  window.previewControlEdit = async function(id) {
+    const artifact = (data.manageable_artifacts || []).find(a => a.id === id);
+    const content = $("control-edit-text").value;
+    const result = await postControlAction("/api/actions/preview", { action: "edit", path: artifact.path, artifact_id: artifact.id, content });
+    $("control-diff").textContent = result.diff || result.message || "";
+  };
+
+  window.executeControlEdit = async function(id) {
+    const artifact = (data.manageable_artifacts || []).find(a => a.id === id);
+    const content = $("control-edit-text").value;
+    await postControlAction("/api/actions/execute", { action: "edit", path: artifact.path, artifact_id: artifact.id, content });
+    window.alert("Saved. Backup created.");
+    ensureControlModal().style.display = "none";
+  };
+
+  window.executeControlAction = async function(payload) {
+    await postControlAction("/api/actions/execute", payload);
+    window.alert("Action executed. Backup created.");
+    ensureControlModal().style.display = "none";
+  };
+
   function renderCleanup() {
     const box = $("cleanup-section"); 
     if(!box) return;
@@ -2374,6 +2598,7 @@ details.evidence-box pre {
     renderAI(); 
     renderAIContext(); 
     renderAIToolCatalog(); 
+    renderControlCenter();
     renderCleanup(); 
     renderChecklist();
     updateProjectedScore();
@@ -2385,7 +2610,8 @@ details.evidence-box pre {
     "ai-tool", "ai-dir-category", "ai-artifact-type", "ai-scope", 
     "ai-impact", "ai-auto", "ai-cleanup", "ai-suspicious", "ai-size-min", 
     "catalog-category", "catalog-vendor", "provider-family", "china-origin", 
-    "provider-env", "catalog-mcp", "catalog-size-min"
+    "provider-env", "catalog-mcp", "catalog-size-min",
+    "control-tool", "control-kind", "control-scope", "control-risk", "control-action"
   ];
   
   inputIds.forEach(id => {

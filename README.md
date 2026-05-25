@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://goreportcard.com/badge/github.com/hemp-dev/quietscope"><img src="https://goreportcard.com/badge/github.com/hemp-dev/quietscope" alt="Go Report Card"></a>
   <img src="https://img.shields.io/badge/License-MIT-emerald.svg" alt="License: MIT">
-  <img src="https://img.shields.io/badge/version-v0.5.1-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-v0.6.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg" alt="Platforms">
 </p>
 
@@ -37,12 +37,20 @@ In the era of AI coding assistants (like Cursor, Claude Code, Cline, and aider),
 
 ## Key Features 🚀
 
-- 🤖 **AI & MCP Agent Security Audit:** Inspects settings for Cursor, Claude Desktop/Code, Cline/Roo, aider, LM Studio, and Ollama. Flags unsafe execution permissions, remote unpinned packages, and credentials exposed in agent rules.
-- 🗃️ **AI Skills & Rules Inventory:** Scans `.cursorrules`, `.cursor/rules`, `CLAUDE.md`, `AGENTS.md`, and manifests to estimate context impact and flag prompt-injection or suspicious patterns (e.g., attempts to read `~/.ssh` or bypass system rules).
+- 🤖 **AI & MCP Agent Security Audit:** Inspects settings for Cursor, Claude Desktop/Code, Gemini, Antigravity, Cline/Roo, aider, LM Studio, and Ollama. Flags unsafe execution permissions, remote unpinned packages, and credentials exposed in agent rules.
+- 🗃️ **AI Skills & Rules Inventory:** Scans `.cursorrules`, `.cursor/rules`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.agents`, `.gemini/skills`, and manifests to estimate context impact and flag prompt-injection or suspicious patterns.
+- 🕹️ **AI Control Center:** Local web, desktop, and HTML reports now expose manageable skills/guides/rules/prompts, MCP servers, caches, and models with preview/diff/backup-first actions. Static HTML reports show the same actions disabled with clear reasons.
 - 🛡️ **System Security Audit:** Audits SIP, Gatekeeper, FileVault, sharing services, SSH configurations, cron persistence, and OS auto-updates (fully optimized for macOS; initial modules for Linux systemd/sudoers and Windows Defender/UAC).
 - 🧹 **Storage Hygiene & Safe Cleanup:** Scans system logs, caches, Xcode DerivedData, simulator footprints, and package manager wastes. Provides a safe dry-run first and requires explicit verification to delete anything.
 - 🌐 **Local Web Controller & HTML UI:** Runs a local control server (`127.0.0.1` only) to configure, execute, and view beautifully structured interactive audits.
 - 🎨 **Wails Desktop Application:** Developer preview of a fully native, glassmorphic cross-platform GUI wrapper.
+
+## AI Control Center Safety Model
+
+- Every write, delete, disable, cleanup, and restore action goes through allowlist checks, symlink blocking, preview/diff, and a backup created before mutation.
+- MCP server changes are structural for JSON, TOML, and YAML configs. Quietscope lists `mcpServers`, `servers`, `command`, `args`, `env` keys, `serverUrl`, and related URL/transport fields without executing any discovered command.
+- Skills, guides, rules, and prompts can be read or edited only when they are safe text artifacts under known AI-tool paths or the selected project root. Secret paths, `.env` files, Keychain data, and SSH/private keys are blocked.
+- Caches/logs are marked cleanable only when they match the cleanup allowlist. Local model directories are manual-only by default, even when they are large.
 
 ---
 

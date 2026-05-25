@@ -63,6 +63,17 @@ type auditUIJobSnapshot struct {
 	Events     []audit.ProgressEvent `json:"events"`
 }
 
+type artifactActionAPIRequest struct {
+	JobID        string         `json:"job_id,omitempty"`
+	Action       string         `json:"action"`
+	Path         string         `json:"path"`
+	ArtifactID   string         `json:"artifact_id,omitempty"`
+	ServerName   string         `json:"server_name,omitempty"`
+	Content      string         `json:"content,omitempty"`
+	ServerConfig map[string]any `json:"server_config,omitempty"`
+	BackupPath   string         `json:"backup_path,omitempty"`
+}
+
 type auditUIJob struct {
 	mu         sync.Mutex
 	cancel     context.CancelFunc
@@ -76,6 +87,7 @@ type auditUIJob struct {
 	startedAt  time.Time
 	finishedAt time.Time
 	summary    audit.Summary
+	report     audit.Report
 	events     []audit.ProgressEvent
 }
 
@@ -112,6 +124,10 @@ func ServeAuditUI(ctx context.Context, cfg Config, opts RunOptions) error {
 	mux.HandleFunc("/", state.handleIndex)
 	mux.HandleFunc("/api/audits", state.handleAudits)
 	mux.HandleFunc("/api/audits/", state.handleAudit)
+	mux.HandleFunc("/api/artifacts", state.handleArtifacts)
+	mux.HandleFunc("/api/actions/preview", state.handleActionPreview)
+	mux.HandleFunc("/api/actions/execute", state.handleActionExecute)
+	mux.HandleFunc("/api/actions/restore", state.handleActionRestore)
 	mux.HandleFunc("/api/remediate", state.handleRemediate)
 	mux.HandleFunc("/reports/", state.handleReports)
 
@@ -289,6 +305,70 @@ func (s *auditUIServer) handleReports(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
+func (s *auditUIServer) handleArtifacts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	_, report := s.managementReport(r.URL.Query().Get("job_id"))
+	writeJSONResponse(w, http.StatusOK, audit.DedupeManageableArtifacts(report.ManageableArtifacts))
+}
+
+func (s *auditUIServer) handleActionPreview(w http.ResponseWriter, r *http.Request) {
+	s.handleAction(w, r, false)
+}
+
+func (s *auditUIServer) handleActionExecute(w http.ResponseWriter, r *http.Request) {
+	s.handleAction(w, r, true)
+}
+
+func (s *auditUIServer) handleActionRestore(w http.ResponseWriter, r *http.Request) {
+	s.handleAction(w, r, true)
+}
+
+func (s *auditUIServer) handleAction(w http.ResponseWriter, r *http.Request, execute bool) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if !s.requireToken(w, r) {
+		return
+	}
+	defer r.Body.Close()
+	var req artifactActionAPIRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4*1024*1024)).Decode(&req); err != nil {
+		http.Error(w, "invalid action request", http.StatusBadRequest)
+		return
+	}
+	home, projectRoot := s.managementContext(req.JobID)
+	actionReq := safety.ActionRequest{
+		Action:       req.Action,
+		Path:         req.Path,
+		ArtifactID:   req.ArtifactID,
+		ServerName:   req.ServerName,
+		Content:      req.Content,
+		ServerConfig: req.ServerConfig,
+		BackupPath:   req.BackupPath,
+		Home:         home,
+		ProjectRoot:  projectRoot,
+	}
+	var result safety.ActionResult
+	var err error
+	if execute {
+		if req.Action == string(safety.ActionRestore) || req.BackupPath != "" && req.Action == "" {
+			actionReq.Action = string(safety.ActionRestore)
+		}
+		result, err = safety.ExecuteAction(actionReq)
+	} else {
+		result, err = safety.PreviewAction(actionReq)
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, result)
+}
+
 func (s *auditUIServer) handleRemediate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		methodNotAllowed(w)
@@ -307,36 +387,18 @@ func (s *auditUIServer) handleRemediate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	home := platform.HomeDir()
-	projectRoot := ""
-	s.mu.Lock()
-	for _, job := range s.jobs {
-		if job.config.ProjectRoot != "" {
-			projectRoot = job.config.ProjectRoot
-			break
-		}
+	home, projectRoot := s.managementContext("")
+	action := req.Action
+	if action == "delete" && safety.IsCleanupAllowed(req.Path, home) {
+		action = string(safety.ActionClean)
 	}
-	s.mu.Unlock()
-
-	var err error
-	switch req.Action {
-	case "delete":
-		err = safety.DeletePath(req.Path, home, projectRoot)
-	case "disable":
-		err = safety.DisablePath(req.Path, home, projectRoot)
-	case "fix":
-		err = safety.FixAISkill(req.Path, home, projectRoot)
-	default:
-		http.Error(w, "unknown action: "+req.Action, http.StatusBadRequest)
-		return
-	}
-
+	result, err := safety.ExecuteAction(safety.ActionRequest{Action: action, Path: req.Path, Home: home, ProjectRoot: projectRoot})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSONResponse(w, http.StatusOK, map[string]string{"status": "success"})
+	writeJSONResponse(w, http.StatusOK, result)
 }
 
 func (s *auditUIServer) startAudit(req auditUIRequest) auditUIJobSnapshot {
@@ -427,6 +489,63 @@ func (s *auditUIServer) listJobs() []auditUIJobSnapshot {
 	return jobs
 }
 
+func (s *auditUIServer) managementContext(jobID string) (string, string) {
+	home := platform.HomeDir()
+	job, _ := s.managementReport(jobID)
+	projectRoot := ""
+	if job != nil && job.config.ProjectRoot != "" {
+		projectRoot = job.config.ProjectRoot
+	}
+	if projectRoot == "" {
+		s.mu.Lock()
+		for _, id := range s.order {
+			if candidate := s.jobs[id]; candidate != nil && candidate.config.ProjectRoot != "" {
+				projectRoot = candidate.config.ProjectRoot
+				break
+			}
+		}
+		s.mu.Unlock()
+	}
+	return home, projectRoot
+}
+
+func (s *auditUIServer) managementReport(jobID string) (*auditUIJob, audit.Report) {
+	if jobID != "" {
+		if job := s.job(jobID); job != nil {
+			job.mu.Lock()
+			report := job.report
+			job.mu.Unlock()
+			return job, report
+		}
+		return nil, audit.Report{}
+	}
+	s.mu.Lock()
+	ids := append([]string(nil), s.order...)
+	s.mu.Unlock()
+	for _, id := range ids {
+		if job := s.job(id); job != nil {
+			job.mu.Lock()
+			report := job.report
+			status := job.status
+			job.mu.Unlock()
+			if status == "completed" && len(report.ManageableArtifacts) > 0 {
+				return job, report
+			}
+		}
+	}
+	for _, id := range ids {
+		if job := s.job(id); job != nil {
+			job.mu.Lock()
+			report := job.report
+			job.mu.Unlock()
+			if len(report.ManageableArtifacts) > 0 {
+				return job, report
+			}
+		}
+	}
+	return nil, audit.Report{}
+}
+
 func (s *auditUIServer) job(id string) *auditUIJob {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -484,6 +603,7 @@ func (j *auditUIJob) finish(report audit.Report, err error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	j.summary = report.Summary
+	j.report = report
 	j.outputDir = report.Metadata.OutputDir
 	if j.outputDir == "" {
 		j.outputDir = j.config.OutputDir

@@ -9,7 +9,7 @@ import (
 	"github.com/hemp-dev/quietscope/internal/app"
 )
 
-const version = "v0.5.1"
+const version = "v0.6.0"
 
 func main() {
 	var cfg app.Config

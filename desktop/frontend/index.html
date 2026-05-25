@@ -757,7 +757,7 @@ button:disabled {
           Quietscope
         </h1>
       </div>
-      <div class="notice">Developer Preview v0.5.1</div>
+      <div class="notice">Developer Preview v0.6.0</div>
     </header>
 
     <main>
@@ -1141,7 +1141,7 @@ button:disabled {
 
   window.switchTab = function(tabName) {
     state.activeTab = tabName;
-    if (tabName === "report" && state.selectedId) {
+    if ((tabName === "report" || tabName === "control") && state.selectedId) {
       if (window.go && window.go.main && window.go.main.App) {
         window.go.main.App.GetReportJSON(state.selectedId)
           .then(jsonStr => {
@@ -1238,6 +1238,109 @@ button:disabled {
         detailsPane.innerHTML = '<div class="empty-state">Select a finding from the list.</div>';
       }
     }
+  };
+
+  function desktopActionFor(artifact, action) {
+    return (artifact.safe_actions || []).find(a => a.action === action) || { available: false, disabled_reason: "Unsupported action" };
+  }
+
+  function desktopArtifactButton(artifact, action, label) {
+    const availability = desktopActionFor(artifact, action);
+    const disabled = !availability.available;
+    const title = disabled ? (availability.disabled_reason || artifact.disabled_reason || "Unavailable") : "Preview changes; backup will be created before write.";
+    return `<button style="padding: 5px 8px; font-size: 10px;" ${disabled ? "disabled" : ""} title="${escapeHTML(title)}" onclick="window.previewDesktopArtifactAction('${artifact.id.replace(/'/g, "\\'")}','${action}')">${label}</button>`;
+  }
+
+  function renderDesktopControlCenter() {
+    const artifacts = (state.reportData && state.reportData.manageable_artifacts) || [];
+    if (!artifacts.length) {
+      return '<div class="empty-state">No manageable artifacts found. Run an AI audit with project scope to populate the AI Control Center.</div>';
+    }
+    const rows = artifacts.map(a => {
+      const actions = ["read","edit","disable","enable","fix","clean","delete","restore"].map(action => desktopArtifactButton(a, action, action)).join(" ");
+      return `<tr><td>${escapeHTML(a.tool)}</td><td>${escapeHTML(a.kind)}</td><td>${escapeHTML(a.scope)}</td><td>${escapeHTML(a.risk)}</td><td style="font-family:monospace;word-break:break-all">${escapeHTML(a.path)}</td><td>${actions}</td></tr>`;
+    }).join("");
+    return `
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; height: 100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:800;">AI Control Center</div>
+            <div style="font-size:11px;color:var(--muted);">Preview changes, create backups, and restore safely through the Wails bridge.</div>
+          </div>
+        </div>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:8px;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr style="color:var(--muted);text-align:left;"><th style="padding:8px;border-bottom:1px solid var(--line);">Tool</th><th style="padding:8px;border-bottom:1px solid var(--line);">Kind</th><th style="padding:8px;border-bottom:1px solid var(--line);">Scope</th><th style="padding:8px;border-bottom:1px solid var(--line);">Risk</th><th style="padding:8px;border-bottom:1px solid var(--line);">Path</th><th style="padding:8px;border-bottom:1px solid var(--line);">Actions</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function ensureDesktopActionModal() {
+    let modal = document.getElementById("desktop-action-modal");
+    if (modal) return modal;
+    modal = document.createElement("div");
+    modal.id = "desktop-action-modal";
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;";
+    modal.innerHTML = '<div style="width:min(920px,96vw);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;"><h2 id="desktop-action-title" style="margin:0;font-size:16px;">Preview</h2><button id="desktop-action-close">Close</button></div><div id="desktop-action-body"></div></div>';
+    document.body.appendChild(modal);
+    document.getElementById("desktop-action-close").addEventListener("click", () => { modal.style.display = "none"; });
+    return modal;
+  }
+
+  function desktopArtifactById(id) {
+    return ((state.reportData && state.reportData.manageable_artifacts) || []).find(a => a.id === id);
+  }
+
+  window.previewDesktopArtifactAction = function(id, action) {
+    const artifact = desktopArtifactById(id);
+    if (!artifact || !window.go || !window.go.main || !window.go.main.App) return;
+    const modal = ensureDesktopActionModal();
+    const body = document.getElementById("desktop-action-body");
+    const payload = { job_id: state.selectedId, action, path: artifact.path, artifact_id: artifact.id };
+    if (artifact.kind === "mcp_server") payload.server_name = artifact.tool;
+    modal.style.display = "flex";
+    body.innerHTML = '<div class="empty-state">Preview changes</div>';
+    if (action === "edit" && artifact.kind !== "mcp_server") {
+      window.go.main.App.ReadArtifact(artifact.path).then(content => {
+        body.innerHTML = `<textarea id="desktop-edit-content" style="width:100%;min-height:280px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;">${escapeHTML(content || "")}</textarea><pre id="desktop-action-diff" style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:260px;overflow:auto;"></pre><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;"><button onclick="window.previewDesktopEdit('${id.replace(/'/g, "\\'")}')">Preview changes</button><button class="primary" onclick="window.executeDesktopEdit('${id.replace(/'/g, "\\'")}')">Apply with backup</button></div>`;
+      }).catch(err => { body.innerHTML = '<div class="empty-state">Read failed: ' + escapeHTML(String(err)) + '</div>'; });
+      return;
+    }
+    if (action === "edit" && artifact.kind === "mcp_server") {
+      const patch = window.prompt("Enter JSON fields to update on this MCP server", "{\"disabled\":true}");
+      if (!patch) { modal.style.display = "none"; return; }
+      payload.server_config = JSON.parse(patch);
+    }
+    window.go.main.App.PreviewAction(JSON.stringify(payload)).then(json => {
+      const preview = JSON.parse(json);
+      body.innerHTML = `<pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:420px;overflow:auto;">${escapeHTML(preview.diff || preview.message || "No changes")}</pre><div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="primary" onclick='window.executeDesktopAction(${JSON.stringify(JSON.stringify(payload))})'>Execute with backup</button></div>`;
+    }).catch(err => { body.innerHTML = '<div class="empty-state">Parser failed, manual review required: ' + escapeHTML(String(err)) + '</div>'; });
+  };
+
+  window.previewDesktopEdit = function(id) {
+    const artifact = desktopArtifactById(id);
+    const payload = { job_id: state.selectedId, action: "edit", path: artifact.path, artifact_id: artifact.id, content: document.getElementById("desktop-edit-content").value };
+    window.go.main.App.PreviewAction(JSON.stringify(payload)).then(json => {
+      document.getElementById("desktop-action-diff").textContent = JSON.parse(json).diff || "";
+    });
+  };
+
+  window.executeDesktopEdit = function(id) {
+    const artifact = desktopArtifactById(id);
+    window.go.main.App.SaveArtifact(artifact.path, document.getElementById("desktop-edit-content").value).then(() => {
+      ensureDesktopActionModal().style.display = "none";
+      alert("Saved. Backup created.");
+    }).catch(err => alert("Save failed: " + err));
+  };
+
+  window.executeDesktopAction = function(payloadJSON) {
+    window.go.main.App.ExecuteAction(payloadJSON).then(() => {
+      ensureDesktopActionModal().style.display = "none";
+      alert("Action executed. Backup created.");
+    }).catch(err => alert("Action failed: " + err));
   };
 
   const runsList = document.getElementById("runs-list");
@@ -1349,8 +1452,8 @@ button:disabled {
     }
 
     state.selectedId = job.id;
-    const isReportTab = state.activeTab === 'report';
-    detailPanel.style.gridTemplateColumns = isReportTab ? '1fr' : '340px 1fr';
+    const isFullTab = state.activeTab === 'report' || state.activeTab === 'control';
+    detailPanel.style.gridTemplateColumns = isFullTab ? '1fr' : '340px 1fr';
 
     const pct = getProgressPercentage(job);
     const isRunning = ["running", "queued"].includes(job.status);
@@ -1383,7 +1486,7 @@ button:disabled {
     const showMetric = (val) => isRunning ? '<span class="pulse-loader">-</span>' : (val !== undefined && val !== null ? val : '-');
 
     detailPanel.innerHTML = `
-      ${!isReportTab ? `
+      ${!isFullTab ? `
         <div class="detail-section">
           <div class="panel-title">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -1473,6 +1576,7 @@ button:disabled {
           <div style="display: flex; gap: 6px; align-items: center;">
             <button class="tab-btn ${state.activeTab === 'console' ? 'active' : ''}" onclick="window.switchTab('console')">Console Log</button>
             <button class="tab-btn ${state.activeTab === 'report' ? 'active' : ''}" onclick="window.switchTab('report')" ${job.status !== 'completed' ? 'disabled' : ''}>Audit Findings</button>
+            <button class="tab-btn ${state.activeTab === 'control' ? 'active' : ''}" onclick="window.switchTab('control')" ${job.status !== 'completed' ? 'disabled' : ''}>AI Control Center</button>
           </div>
           
           ${state.activeTab === 'console' ? `
@@ -1487,6 +1591,8 @@ button:disabled {
         
         ${state.activeTab === 'console' ? `
           <div class="console" id="console-output">${formatConsoleLog(job.events)}</div>
+        ` : state.activeTab === 'control' ? `
+          ${renderDesktopControlCenter()}
         ` : `
           <!-- Horizontal Summary Bar -->
           <div class="findings-summary-bar" style="display: flex; gap: 20px; align-items: center; padding: 12px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin: 0 16px 16px 16px;">
@@ -1564,7 +1670,7 @@ button:disabled {
       if (consoleDiv && !state.scrollLock) {
         consoleDiv.scrollTop = consoleDiv.scrollHeight;
       }
-    } else {
+    } else if (state.activeTab === 'report') {
       // Re-populate and render findings table if we are returning to this view
       window.filterDesktopFindings();
     }

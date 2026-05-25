@@ -1,5 +1,31 @@
 # Release Notes
 
+## v0.6.0
+
+AI Control Center release: manageable local AI artifacts are now visible across JSON, HTML, local web, and desktop surfaces with preview/diff/backup-first actions.
+
+### Added
+
+- `manageable_artifacts` report contract covering skills/guides/rules/prompts, MCP server entries, caches/logs, local models, and action availability metadata.
+- Safe remediation core v2 with `PreviewAction`, `ExecuteAction`, `CreateBackup`, `RestoreBackup`, `ReadArtifact`, and `SaveArtifact`.
+- Structural MCP manager support for JSON, TOML, and YAML configs, including `mcpServers`, `servers`, `command`, `args`, env key metadata, URL fields, `serverUrl`, and transport/type fields.
+- Local web API endpoints: `GET /api/artifacts`, `POST /api/actions/preview`, `POST /api/actions/execute`, and `POST /api/actions/restore`.
+- Wails bridge parity methods: `ListManageableArtifacts`, `PreviewAction`, `ExecuteAction`, `RestoreBackup`, `ReadArtifact`, and `SaveArtifact`.
+- AI Control Center sections in the static HTML report, local browser UI, and Wails desktop preview.
+
+### Changed
+
+- Static HTML reports now show action buttons disabled with honest reasons instead of implying offline mutation support.
+- Cache/log cleanup and model storage are split: allowlisted caches can be cleaned with backup; model directories are manual-only by default.
+- Gemini, Google Antigravity, `.agents`, `.gemini`, Hermes, OpenCode, and additional MCP path coverage are included in management metadata.
+- Version bumped to `v0.6.0`.
+
+### Security
+
+- Write/delete/disable/fix/restore actions require allowlist checks, symlink blocking, and a backup before mutation.
+- Secret paths, Keychain data, `.env` files, SSH/private keys, and cloud credential roots remain blocked from read/edit workflows.
+- MCP commands/scripts/hooks are never executed; config mutation is parser-based rather than string replacement.
+
 ## v0.5.1
 
 UI layout polish and release asset cleanup for the desktop/report refresh.

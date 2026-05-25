@@ -12,6 +12,8 @@ import (
 	"github.com/hemp-dev/quietscope/internal/audit"
 	"github.com/hemp-dev/quietscope/internal/platform"
 	"github.com/hemp-dev/quietscope/internal/safety"
+	toml "github.com/pelletier/go-toml/v2"
+	"gopkg.in/yaml.v3"
 )
 
 type AIToolDefinition struct {
@@ -66,8 +68,11 @@ func RunAIToolsCatalog(ctx context.Context, cfg audit.RuntimeConfig, runner *pla
 	securityTools := detectAISecurityTools(cfg)
 	findings := aiToolCatalogFindings(tools, clients, servers, hermes, opencode, providers, models, securityTools)
 	summary := calculateAIProviderSummary(ctx, runner, tools, clients, servers, hermes, opencode, providers, models)
+	manageable := manageableForMCPServers(servers, cfg)
+	manageable = append(manageable, manageableForLocalModels(models, cfg)...)
 	return audit.CheckResult{
 		Findings:            findings,
+		ManageableArtifacts: manageable,
 		AIToolCatalog:       tools,
 		MCPClients:          clients,
 		MCPServers:          servers,
@@ -89,7 +94,7 @@ func AIToolDefinitions(home string) []AIToolDefinition {
 		{ID: "github-copilot", DisplayName: "GitHub Copilot", Vendor: "GitHub", Categories: []string{"ai_extension", "ai_coding_agent", "cloud_agent_cli"}, BinaryNames: []string{"gh", "copilot"}, ConfigPaths: []string{filepath.Join(home, ".config", "gh"), filepath.Join(home, "Library", "Application Support", "Code")}, ProjectMarkers: []string{filepath.Join(".github", "copilot-instructions.md")}, RiskNotes: []string{"Copilot instructions can affect coding-agent behavior."}},
 		{ID: "cursor", DisplayName: "Cursor", Vendor: "Anysphere", Categories: []string{"ai_ide", "ai_coding_agent", "mcp_client", "ai_skill_host"}, AppPaths: []string{app("Cursor.app"), userApp("Cursor.app")}, BinaryNames: []string{"cursor"}, ConfigPaths: []string{filepath.Join(home, ".cursor"), filepath.Join(home, "Library", "Application Support", "Cursor")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Cursor"), filepath.Join(home, "Library", "Caches", "com.todesktop.230313mzl4w4u92")}, LogPaths: []string{filepath.Join(home, "Library", "Logs", "Cursor")}, ProjectMarkers: []string{".cursor", ".cursorrules"}, Ports: []int{3000, 5000, 8000, 8080}, ProcessNames: []string{"Cursor"}, RiskNotes: []string{"Project rules and MCP configs can be auto-loaded depending on trust settings."}},
 		{ID: "windsurf", DisplayName: "Windsurf", Vendor: "Codeium", Categories: []string{"ai_ide", "ai_coding_agent", "mcp_client"}, AppPaths: []string{app("Windsurf.app"), userApp("Windsurf.app")}, BinaryNames: []string{"windsurf"}, ConfigPaths: []string{filepath.Join(home, ".windsurf"), filepath.Join(home, "Library", "Application Support", "Windsurf")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Windsurf")}, LogPaths: []string{filepath.Join(home, "Library", "Logs", "Windsurf")}, ProjectMarkers: []string{".windsurf", ".windsurfrules"}, RiskNotes: []string{"Rules and cloud/local coding-agent state may influence context."}},
-		{ID: "google-antigravity", DisplayName: "Google Antigravity", Vendor: "Google", Categories: []string{"ai_ide", "ai_coding_agent", "mcp_client", "cloud_agent_cli"}, AppPaths: []string{app("Google Antigravity.app"), userApp("Google Antigravity.app")}, BinaryNames: []string{"gemini"}, ConfigPaths: []string{filepath.Join(home, ".antigravity"), filepath.Join(home, ".gemini")}, ProjectMarkers: []string{".antigravity"}, RiskNotes: []string{"May connect remote model providers to local project/tool context."}},
+		{ID: "google-antigravity", DisplayName: "Google Antigravity / Antigravity CLI", Vendor: "Google", Categories: []string{"ai_ide", "ai_coding_agent", "mcp_client", "cloud_agent_cli"}, AppPaths: []string{app("Google Antigravity.app"), userApp("Google Antigravity.app")}, BinaryNames: []string{"agy"}, ConfigPaths: []string{filepath.Join(home, ".antigravity"), filepath.Join(home, ".gemini", "antigravity"), filepath.Join(home, ".gemini", "antigravity", "mcp_config.json"), filepath.Join(home, ".gemini", "antigravity-cli"), filepath.Join(home, ".gemini", "antigravity-cli", "settings.json"), filepath.Join(home, ".gemini", "antigravity-cli", "mcp_config.json")}, ProjectMarkers: []string{".antigravity", filepath.Join(".agents", "mcp_config.json"), filepath.Join(".agents", "skills")}, RiskNotes: []string{"May connect remote model providers to local project/tool context."}},
 		{ID: "cline", DisplayName: "Cline", Vendor: "Cline", Categories: []string{"ai_extension", "ai_coding_agent", "mcp_client"}, BinaryNames: []string{"cline"}, ConfigPaths: []string{filepath.Join(home, ".cline")}, ProjectMarkers: []string{".cline"}, RiskNotes: []string{"Can pair remote models with local file/shell/browser tools."}},
 		{ID: "roo-code", DisplayName: "Roo Code / Roo Coder", Vendor: "Roo", Categories: []string{"ai_extension", "ai_coding_agent", "mcp_client"}, BinaryNames: []string{"roo"}, ConfigPaths: []string{filepath.Join(home, ".roo")}, ProjectMarkers: []string{".roo"}, RiskNotes: []string{"Can run with broad tool permissions if configured."}},
 		{ID: "continue", DisplayName: "Continue.dev", Vendor: "Continue", Categories: []string{"ai_extension", "ai_coding_agent", "mcp_client"}, BinaryNames: []string{"continue"}, ConfigPaths: []string{filepath.Join(home, ".continue"), filepath.Join(home, ".config", "continue"), filepath.Join(home, "Library", "Application Support", "Continue")}, ProjectMarkers: []string{".continue"}, RiskNotes: []string{"Model/provider configs can include local and remote models."}},
@@ -108,7 +113,7 @@ func AIToolDefinitions(home string) []AIToolDefinition {
 		{ID: "jetbrains-ai", DisplayName: "JetBrains AI Assistant", Vendor: "JetBrains", Categories: []string{"ai_ide", "ai_extension"}, AppPaths: []string{app("JetBrains Toolbox.app"), app("IntelliJ IDEA.app"), app("PyCharm.app"), app("WebStorm.app"), app("Android Studio.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "JetBrains")}, RiskNotes: []string{"IDE plugins may access broad project context."}},
 		{ID: "zed-ai", DisplayName: "Zed AI", Vendor: "Zed", Categories: []string{"ai_ide", "mcp_client"}, AppPaths: []string{app("Zed.app")}, BinaryNames: []string{"zed"}, ConfigPaths: []string{filepath.Join(home, ".config", "zed"), filepath.Join(home, "Library", "Application Support", "Zed")}, RiskNotes: []string{"Editor AI config may include providers and MCP clients."}},
 		{ID: "amazon-q", DisplayName: "Amazon Q Developer", Vendor: "Amazon", Categories: []string{"ai_cli_agent", "ai_extension", "cloud_agent_cli"}, BinaryNames: []string{"q", "amazonq"}, ConfigPaths: []string{filepath.Join(home, ".aws", "amazonq"), filepath.Join(home, ".config", "amazonq")}, RiskNotes: []string{"Cloud agent can interact with AWS context if configured."}},
-		{ID: "gemini-cli", DisplayName: "Gemini CLI / Gemini Code Assist", Vendor: "Google", Categories: []string{"ai_cli_agent", "ai_coding_agent", "cloud_agent_cli"}, BinaryNames: []string{"gemini"}, ConfigPaths: []string{filepath.Join(home, ".gemini"), filepath.Join(home, ".config", "gemini")}, RiskNotes: []string{"Remote model provider usage depends on local provider config and env."}},
+		{ID: "gemini-cli", DisplayName: "Gemini CLI / Gemini Code Assist", Vendor: "Google", Categories: []string{"ai_cli_agent", "ai_coding_agent", "cloud_agent_cli"}, BinaryNames: []string{"gemini"}, ConfigPaths: []string{filepath.Join(home, ".gemini"), filepath.Join(home, ".gemini", "settings.json"), filepath.Join(home, ".gemini", "skills"), filepath.Join(home, ".config", "gemini")}, ProjectMarkers: []string{"GEMINI.md", filepath.Join(".gemini", "settings.json"), filepath.Join(".gemini", "skills")}, RiskNotes: []string{"Remote model provider usage depends on local provider config and env."}},
 		{ID: "ollama", DisplayName: "Ollama", Vendor: "Ollama", Categories: []string{"local_llm_runtime"}, AppPaths: []string{app("Ollama.app")}, BinaryNames: []string{"ollama"}, ConfigPaths: []string{filepath.Join(home, ".ollama"), filepath.Join(home, "Library", "Application Support", "Ollama")}, CachePaths: []string{filepath.Join(home, ".ollama", "models"), filepath.Join(home, ".cache", "ollama")}, Ports: []int{11434}, ProcessNames: []string{"ollama"}, RiskNotes: []string{"Local model API should bind to loopback unless intentionally exposed."}},
 		{ID: "lm-studio", DisplayName: "LM Studio", Vendor: "LM Studio", Categories: []string{"local_llm_desktop", "local_llm_runtime"}, AppPaths: []string{app("LM Studio.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "LM Studio")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "LM Studio"), filepath.Join(home, ".cache", "lm-studio")}, LogPaths: []string{filepath.Join(home, "Library", "Logs", "LM Studio")}, Ports: []int{1234}, ProcessNames: []string{"LM Studio"}, RiskNotes: []string{"Local API exposure and model cache size should be reviewed."}},
 		{ID: "jan", DisplayName: "Jan", Vendor: "Jan", Categories: []string{"local_llm_desktop"}, AppPaths: []string{app("Jan.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Jan")}, Ports: []int{1337}, ProcessNames: []string{"Jan"}, RiskNotes: []string{"Local desktop model app metadata is audited only."}},
@@ -218,11 +223,12 @@ func detectMCPClients(cfg audit.RuntimeConfig) []audit.MCPClientCatalogItem {
 		{"Goose", []string{filepath.Join(cfg.HomeDir, ".goose"), filepath.Join(cfg.HomeDir, ".config", "goose")}},
 		{"OpenCode", []string{filepath.Join(cfg.HomeDir, ".opencode"), filepath.Join(cfg.HomeDir, ".config", "opencode")}},
 		{"Hermes Agent", []string{filepath.Join(cfg.HomeDir, ".hermes"), filepath.Join(cfg.HomeDir, ".hermes-agent")}},
-		{"Google Antigravity", []string{filepath.Join(cfg.HomeDir, ".antigravity")}},
+		{"Google Antigravity", []string{filepath.Join(cfg.HomeDir, ".antigravity"), filepath.Join(cfg.HomeDir, ".gemini", "antigravity"), filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.json"), filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli"), filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.json")}},
+		{"Gemini CLI", []string{filepath.Join(cfg.HomeDir, ".gemini", "settings.json")}},
 		{"Zed", []string{filepath.Join(cfg.HomeDir, ".config", "zed"), filepath.Join(cfg.HomeDir, "Library", "Application Support", "Zed")}},
 	}
 	if cfg.ProjectRoot != "" {
-		projectPaths := []string{filepath.Join(cfg.ProjectRoot, ".cursor", "mcp.json"), filepath.Join(cfg.ProjectRoot, ".vscode", "mcp.json"), filepath.Join(cfg.ProjectRoot, ".vscode", "settings.json"), filepath.Join(cfg.ProjectRoot, "mcp.json"), filepath.Join(cfg.ProjectRoot, ".opencode"), filepath.Join(cfg.ProjectRoot, ".hermes"), filepath.Join(cfg.ProjectRoot, ".hermes-agent")}
+		projectPaths := []string{filepath.Join(cfg.ProjectRoot, ".cursor", "mcp.json"), filepath.Join(cfg.ProjectRoot, ".vscode", "mcp.json"), filepath.Join(cfg.ProjectRoot, ".vscode", "settings.json"), filepath.Join(cfg.ProjectRoot, "mcp.json"), filepath.Join(cfg.ProjectRoot, ".opencode"), filepath.Join(cfg.ProjectRoot, ".hermes"), filepath.Join(cfg.ProjectRoot, ".hermes-agent"), filepath.Join(cfg.ProjectRoot, ".antigravity"), filepath.Join(cfg.ProjectRoot, ".gemini", "settings.json"), filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.json")}
 		defs = append(defs, clientDef{"Project MCP-compatible clients", projectPaths})
 	}
 	var clients []audit.MCPClientCatalogItem
@@ -282,6 +288,17 @@ func candidateMCPCatalogPaths(cfg audit.RuntimeConfig) []string {
 		filepath.Join(cfg.HomeDir, ".hermes", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".hermes-agent", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".antigravity", "mcp.json"),
+		filepath.Join(cfg.HomeDir, ".antigravity", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.yaml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.yaml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.yaml"),
 		filepath.Join(cfg.HomeDir, ".config", "zed", "settings.json"),
 	)
 	if cfg.ProjectRoot != "" {
@@ -291,6 +308,17 @@ func candidateMCPCatalogPaths(cfg audit.RuntimeConfig) []string {
 			filepath.Join(cfg.ProjectRoot, ".opencode", "mcp.json"),
 			filepath.Join(cfg.ProjectRoot, ".hermes", "mcp.json"),
 			filepath.Join(cfg.ProjectRoot, ".hermes-agent", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.toml"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.yaml"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "settings.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.toml"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.yaml"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.json"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.toml"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.yaml"),
 		)
 	}
 	return dedupeExistingPaths(paths)
@@ -306,9 +334,21 @@ func parseMCPServerCatalog(path string, scope string) []parsedMCPServer {
 		return nil
 	}
 	var root any
-	if err := json.Unmarshal(data, &root); err != nil {
-		return nil
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".toml":
+		if err := toml.Unmarshal(data, &root); err != nil {
+			return nil
+		}
+	case ".yaml", ".yml":
+		if err := yaml.Unmarshal(data, &root); err != nil {
+			return nil
+		}
+	default:
+		if err := json.Unmarshal(data, &root); err != nil {
+			return nil
+		}
 	}
+	root = normalizeStructuredValue(root)
 	var servers []parsedMCPServer
 	extractMCPServerMaps(root, "config", path, scope, &servers)
 	return servers
@@ -336,6 +376,9 @@ func extractMCPServerMaps(value any, name string, path string, scope string, out
 			return
 		}
 		for k, v := range x {
+			if k == "mcpServers" || k == "servers" {
+				continue
+			}
 			extractMCPServerMaps(v, k, path, scope, out)
 		}
 	case []any:
@@ -351,7 +394,7 @@ func mcpServerFromMap(name string, server map[string]any, path string, scope str
 		Command:    stringValue(server["command"]),
 		Args:       stringSliceValue(server["args"]),
 		Transport:  firstStringValue(server, []string{"transport", "type"}),
-		URL:        firstStringValue(server, []string{"url", "endpoint", "baseUrl", "serverUrl"}),
+		URL:        firstStringValue(server, []string{"url", "endpoint", "baseUrl", "serverUrl", "httpUrl"}),
 		EnvKeys:    envKeysOnly(server["env"]),
 		ConfigPath: path,
 		Scope:      scope,

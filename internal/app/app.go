@@ -123,6 +123,7 @@ func Run(ctx context.Context, cfg Config, opts RunOptions) (audit.Report, error)
 		SystemInfo:           result.SystemInfo,
 		Findings:             result.Findings,
 		CleanupCandidates:    result.CleanupCandidates,
+		ManageableArtifacts:  result.ManageableArtifacts,
 		AISecurity:           result.AISecurity,
 		AIContextInventory:   result.AIContextInventory,
 		AIRelatedDirectories: result.AIRelatedDirectories,
@@ -139,6 +140,7 @@ func Run(ctx context.Context, cfg Config, opts RunOptions) (audit.Report, error)
 		AIProviderSummary:    result.AIProviderSummary,
 		GeneratedAt:          metadata.GeneratedAt,
 	}
+	auditReport.ManageableArtifacts = audit.DedupeManageableArtifacts(auditReport.ManageableArtifacts)
 	auditReport.Summary = audit.CalculateSummary(auditReport.Findings, auditReport.CleanupCandidates)
 
 	if err := ctx.Err(); err != nil {

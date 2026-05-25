@@ -1,12 +1,16 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/hemp-dev/quietscope/internal/audit"
 )
 
 func TestHandleAuditDeleteAndCancel(t *testing.T) {
@@ -85,5 +89,95 @@ func TestHandleAuditDeleteAndCancel(t *testing.T) {
 	// Verify directory itself was removed since it is now empty
 	if _, err := os.Stat(jobOutputDir); !os.IsNotExist(err) {
 		t.Error("jobOutputDir should be deleted")
+	}
+}
+
+func TestManagementAPIArtifactsPreviewExecuteRestore(t *testing.T) {
+	tempDir := t.TempDir()
+	home := filepath.Join(tempDir, "home")
+	project := filepath.Join(home, "project")
+	artifactPath := filepath.Join(project, "AGENTS.md")
+	if err := os.MkdirAll(project, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(artifactPath, []byte("old\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	server := &auditUIServer{
+		token: "test-token",
+		jobs:  map[string]*auditUIJob{},
+		order: []string{"job1"},
+	}
+	server.jobs["job1"] = &auditUIJob{
+		id:        "job1",
+		status:    "completed",
+		createdAt: time.Now(),
+		config:    auditUIConfigSnapshot{ProjectRoot: project},
+		report: audit.Report{ManageableArtifacts: []audit.ManageableArtifact{{
+			ID:    "agent-md",
+			Path:  artifactPath,
+			Tool:  "Codex",
+			Kind:  "instruction",
+			Scope: "project",
+			Risk:  "high",
+		}}},
+	}
+
+	t.Setenv("HOME", home)
+	reqList := httptest.NewRequest(http.MethodGet, "/api/artifacts?job_id=job1", nil)
+	wList := httptest.NewRecorder()
+	server.handleArtifacts(wList, reqList)
+	if wList.Code != http.StatusOK {
+		t.Fatalf("expected artifacts OK, got %d", wList.Code)
+	}
+	if !bytes.Contains(wList.Body.Bytes(), []byte("agent-md")) {
+		t.Fatalf("expected artifact payload, got %s", wList.Body.String())
+	}
+
+	payload := map[string]any{"job_id": "job1", "action": "edit", "path": artifactPath, "content": "new\n"}
+	body, _ := json.Marshal(payload)
+	reqPreview := httptest.NewRequest(http.MethodPost, "/api/actions/preview", bytes.NewReader(body))
+	reqPreview.Header.Set("X-Audit-Token", "test-token")
+	wPreview := httptest.NewRecorder()
+	server.handleActionPreview(wPreview, reqPreview)
+	if wPreview.Code != http.StatusOK {
+		t.Fatalf("expected preview OK, got %d: %s", wPreview.Code, wPreview.Body.String())
+	}
+	if !bytes.Contains(wPreview.Body.Bytes(), []byte("-old")) {
+		t.Fatalf("expected diff payload, got %s", wPreview.Body.String())
+	}
+
+	reqExecute := httptest.NewRequest(http.MethodPost, "/api/actions/execute", bytes.NewReader(body))
+	reqExecute.Header.Set("X-Audit-Token", "test-token")
+	wExecute := httptest.NewRecorder()
+	server.handleActionExecute(wExecute, reqExecute)
+	if wExecute.Code != http.StatusOK {
+		t.Fatalf("expected execute OK, got %d: %s", wExecute.Code, wExecute.Body.String())
+	}
+	var result struct {
+		BackupPath string `json:"backup_path"`
+	}
+	if err := json.Unmarshal(wExecute.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.BackupPath == "" {
+		t.Fatal("expected backup path")
+	}
+	if got, _ := os.ReadFile(artifactPath); string(got) != "new\n" {
+		t.Fatalf("expected edited content, got %q", got)
+	}
+
+	restorePayload := map[string]any{"job_id": "job1", "action": "restore", "path": artifactPath, "backup_path": result.BackupPath}
+	restoreBody, _ := json.Marshal(restorePayload)
+	reqRestore := httptest.NewRequest(http.MethodPost, "/api/actions/restore", bytes.NewReader(restoreBody))
+	reqRestore.Header.Set("X-Audit-Token", "test-token")
+	wRestore := httptest.NewRecorder()
+	server.handleActionRestore(wRestore, reqRestore)
+	if wRestore.Code != http.StatusOK {
+		t.Fatalf("expected restore OK, got %d: %s", wRestore.Code, wRestore.Body.String())
+	}
+	if got, _ := os.ReadFile(artifactPath); string(got) != "old\n" {
+		t.Fatalf("expected restored content, got %q", got)
 	}
 }

@@ -3,7 +3,6 @@ package safety
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,7 +16,7 @@ func IsPathSafeToRemediate(path string, home string, projectRoot string) bool {
 	clean := filepath.Clean(path)
 	home = filepath.Clean(home)
 
-	if isForbiddenCleanupPath(clean, home) {
+	if isForbiddenCleanupPath(clean, home) || IsSecretPath(clean, home) {
 		return false
 	}
 
@@ -28,25 +27,10 @@ func IsPathSafeToRemediate(path string, home string, projectRoot string) bool {
 
 	// 2. Check specific AI tool allowed folders in home directory
 	allowedSubdirs := []string{
-		filepath.Join(".cache", "huggingface"),
-		filepath.Join(".cache", "modelscope"),
-		filepath.Join(".cache", "lm-studio"),
-		filepath.Join(".cache", "llama.cpp"),
-		filepath.Join(".cache", "whisper"),
 		filepath.Join(".cache", "pip"),
 		filepath.Join(".cache", "uv"),
-		filepath.Join(".ollama", "models"),
-		filepath.Join(".claude", "skills"),
-		filepath.Join(".hermes", "skills"),
-		filepath.Join(".hermes-agent", "skills"),
-		filepath.Join(".opencode", "skills"),
-		filepath.Join(".cursor", "rules"),
 		filepath.Join("Library", "Caches"),
 		filepath.Join("Library", "Logs"),
-		filepath.Join("Library", "Application Support", "Cursor"),
-		filepath.Join("Library", "Application Support", "LM Studio"),
-		filepath.Join("Library", "Application Support", "Ollama"),
-		filepath.Join("Library", "Application Support", "anythingllm-desktop"),
 	}
 
 	for _, sub := range allowedSubdirs {
@@ -56,81 +40,32 @@ func IsPathSafeToRemediate(path string, home string, projectRoot string) bool {
 		}
 	}
 
-	// 3. Check if inside projectRoot workspace
-	if projectRoot != "" {
-		cleanProj := filepath.Clean(projectRoot)
-		if cleanProj != "/" && cleanProj != filepath.VolumeName(cleanProj) {
-			if clean == cleanProj || strings.HasPrefix(clean, cleanProj+string(os.PathSeparator)) {
-				// Ensure it's not a forbidden hidden directory like .git
-				if !strings.Contains(clean, string(os.PathSeparator)+".git"+string(os.PathSeparator)) && !strings.HasSuffix(clean, string(os.PathSeparator)+".git") {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
+	return IsManageablePathAllowed(clean, home, projectRoot)
 }
 
 // DeletePath safely removes a file or folder if it is safe to remediate.
 func DeletePath(path string, home string, projectRoot string) error {
-	if !IsPathSafeToRemediate(path, home, projectRoot) {
-		return fmt.Errorf("path %q is not safe/allowlisted for deletion", path)
-	}
-	info, err := os.Lstat(path)
-	if err == nil && info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("path %q is a symlink; remediation is blocked for security", path)
-	}
-	return os.RemoveAll(path)
+	_, err := ExecuteAction(ActionRequest{Action: string(ActionDelete), Path: path, Home: home, ProjectRoot: projectRoot})
+	return err
 }
 
 // DisablePath renames an AI skill/rules file by appending .disabled or removing it if already disabled.
 func DisablePath(path string, home string, projectRoot string) error {
-	originalPath := path
+	action := string(ActionDisable)
 	if strings.HasSuffix(path, ".disabled") {
-		originalPath = strings.TrimSuffix(path, ".disabled")
+		action = string(ActionEnable)
 	}
-
-	if !IsPathSafeToRemediate(originalPath, home, projectRoot) {
-		return fmt.Errorf("path %q is not safe/allowlisted for modification", originalPath)
-	}
-
-	info, err := os.Lstat(path)
-	if err == nil && info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("path %q is a symlink; remediation is blocked for security", path)
-	}
-
-	if strings.HasSuffix(path, ".disabled") {
-		// Re-enable
-		return os.Rename(path, originalPath)
-	} else {
-		// Disable
-		return os.Rename(path, path+".disabled")
-	}
+	_, err := ExecuteAction(ActionRequest{Action: action, Path: path, Home: home, ProjectRoot: projectRoot})
+	return err
 }
 
 // FixAISkill comments out lines that contain suspicious prompt/tool patterns.
 func FixAISkill(path string, home string, projectRoot string) error {
-	if !IsPathSafeToRemediate(path, home, projectRoot) {
-		return fmt.Errorf("path %q is not safe/allowlisted for modification", path)
-	}
+	_, err := ExecuteAction(ActionRequest{Action: string(ActionFix), Path: path, Home: home, ProjectRoot: projectRoot})
+	return err
+}
 
-	info, err := os.Lstat(path)
-	if err != nil {
-		return err
-	}
-	if info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("path %q is a symlink; remediation is blocked for security", path)
-	}
-	if info.IsDir() {
-		return fmt.Errorf("path %q is a directory, cannot fix inline", path)
-	}
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
+func fixedAISkillContent(path string, content []byte) ([]byte, bool, error) {
 	var output bytes.Buffer
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	ext := strings.ToLower(filepath.Ext(path))
@@ -161,13 +96,10 @@ func FixAISkill(path string, home string, projectRoot string) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return err
+		return nil, false, err
 	}
 
-	if modified {
-		return os.WriteFile(path, output.Bytes(), info.Mode())
-	}
-	return nil
+	return output.Bytes(), modified, nil
 }
 
 // MatchAISuspiciousPromptPatterns matches suspicious prompt patterns case-insensitively.

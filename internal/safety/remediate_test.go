@@ -13,7 +13,7 @@ func TestIsPathSafeToRemediate(t *testing.T) {
 
 	// Safe paths
 	safeCache := filepath.Join(home, "Library", "Caches", "some-cache")
-	safeHF := filepath.Join(home, ".cache", "huggingface", "model-file")
+	manualModelCache := filepath.Join(home, ".cache", "huggingface", "model-file")
 	safeSkill := filepath.Join(home, ".claude", "skills", "my-skill")
 	safeProject := filepath.Join(projectRoot, ".cursorrules")
 
@@ -28,7 +28,7 @@ func TestIsPathSafeToRemediate(t *testing.T) {
 		expected bool
 	}{
 		{safeCache, true},
-		{safeHF, true},
+		{manualModelCache, false},
 		{safeSkill, true},
 		{safeProject, true},
 		{unsafeSystem, false},
@@ -208,5 +208,110 @@ func TestRemediationSecurity(t *testing.T) {
 	err = FixAISkill(symlinkFile, homeDir, "")
 	if err == nil {
 		t.Error("FixAISkill should have rejected symlink remediation for security")
+	}
+}
+
+func TestExecuteActionCreatesBackupAndRestore(t *testing.T) {
+	tmp := t.TempDir()
+	home := filepath.Join(tmp, "home")
+	project := filepath.Join(home, "project")
+	path := filepath.Join(project, "AGENTS.md")
+	if err := os.MkdirAll(project, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("original\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	preview, err := PreviewAction(ActionRequest{Action: string(ActionEdit), Path: path, Content: "updated\n", Home: home, ProjectRoot: project})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(preview.Diff, "-original") || !strings.Contains(preview.Diff, "+updated") {
+		t.Fatalf("expected edit diff, got %q", preview.Diff)
+	}
+
+	result, err := ExecuteAction(ActionRequest{Action: string(ActionEdit), Path: path, Content: "updated\n", Home: home, ProjectRoot: project})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.BackupPath == "" {
+		t.Fatal("expected backup path")
+	}
+	if got, _ := os.ReadFile(path); string(got) != "updated\n" {
+		t.Fatalf("unexpected edited file: %q", got)
+	}
+
+	if _, err := RestoreBackup(ActionRequest{Action: string(ActionRestore), Path: path, BackupPath: result.BackupPath, Home: home, ProjectRoot: project}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(path); string(got) != "original\n" {
+		t.Fatalf("expected restored content, got %q", got)
+	}
+}
+
+func TestReadArtifactBlocksSecretPath(t *testing.T) {
+	tmp := t.TempDir()
+	home := filepath.Join(tmp, "home")
+	project := filepath.Join(home, "project")
+	path := filepath.Join(project, ".env")
+	if err := os.MkdirAll(project, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("TOKEN=secret\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadArtifact(path, home, project, 0); err == nil {
+		t.Fatal("expected .env reads to be blocked")
+	}
+}
+
+func TestMCPMutationsJSONTOMLYAML(t *testing.T) {
+	cases := []struct {
+		name string
+		rel  string
+		body string
+	}{
+		{"json", filepath.Join(".agents", "mcp_config.json"), `{"mcpServers":{"demo":{"command":"npx","args":["demo@1.0.0"],"env":{"API_KEY":"secret"}}}}`},
+		{"toml", filepath.Join(".agents", "mcp_config.toml"), "[mcpServers.demo]\ncommand = \"npx\"\nargs = [\"demo@1.0.0\"]\n[mcpServers.demo.env]\nAPI_KEY = \"secret\"\n"},
+		{"yaml", filepath.Join(".agents", "mcp_config.yaml"), "mcpServers:\n  demo:\n    command: npx\n    args: [demo@1.0.0]\n    env:\n      API_KEY: secret\n"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			home := filepath.Join(tmp, "home")
+			project := filepath.Join(home, "project")
+			path := filepath.Join(project, tc.rel)
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, []byte(tc.body), 0644); err != nil {
+				t.Fatal(err)
+			}
+			servers, err := ListMCPServers(path, home, project, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(servers) != 1 || servers[0].Name != "demo" || len(servers[0].EnvKeys) != 1 || servers[0].EnvKeys[0] != "API_KEY" {
+				t.Fatalf("unexpected servers: %#v", servers)
+			}
+			preview, err := PreviewAction(ActionRequest{Action: string(ActionDisable), Path: path, ServerName: "demo", Home: home, ProjectRoot: project})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(preview.Diff, "secret") {
+				t.Fatalf("preview leaked env value: %s", preview.Diff)
+			}
+			if _, err := ExecuteAction(ActionRequest{Action: string(ActionDisable), Path: path, ServerName: "demo", Home: home, ProjectRoot: project}); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(data), "disabled") {
+				t.Fatalf("expected disabled marker in %s content:\n%s", tc.name, data)
+			}
+		})
 	}
 }

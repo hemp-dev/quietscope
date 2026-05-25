@@ -1,6 +1,6 @@
 # Quietscope Wails Desktop Preview
 
-This directory contains the developer preview (`v0.5.1`) of the **Quietscope Desktop Application**, packaged using the [Wails framework](https://wails.io/).
+This directory contains the developer preview (`v0.6.0`) of the **Quietscope Desktop Application**, packaged using the [Wails framework](https://wails.io/).
 
 It provides a premium, responsive, sandboxed native window UI that wraps around Quietscope's robust Go audit core (`internal/app`).
 

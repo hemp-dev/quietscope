@@ -9,6 +9,7 @@ import (
 
 var sensitiveNamePattern = regexp.MustCompile(`(?i)(TOKEN|SECRET|PASSWORD|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|AUTH|CREDENTIAL)`)
 var assignmentPattern = regexp.MustCompile(`(?i)((token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|auth|credential)\s*[:=]\s*)(["']?)[^\s"',;]+`)
+var quotedAssignmentPattern = regexp.MustCompile(`(?i)(["']?(token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|auth|credential)["']?\s*[:=]\s*)(["']?)[^\s"',;}]+`)
 var flagValuePattern = regexp.MustCompile(`(?i)((--?(token|secret|password|api-key|apikey|key|auth|credential)\s+))([^\s"',;]+)`)
 
 func IsSensitiveEnvName(name string) bool {
@@ -24,6 +25,7 @@ func MaskSensitiveValue(name string, value string) string {
 
 func RedactSensitiveText(input string) string {
 	redacted := assignmentPattern.ReplaceAllString(input, `${1}${3}***MASKED***`)
+	redacted = quotedAssignmentPattern.ReplaceAllString(redacted, `${1}${3}***MASKED***`)
 	redacted = flagValuePattern.ReplaceAllString(redacted, `${1}***MASKED***`)
 	redacted = redactLikelyBearer(redacted)
 	return redacted
@@ -38,6 +40,7 @@ func MaskPath(path string, home string, username string) string {
 	if path == "" {
 		return ""
 	}
+	preferSlash := strings.Contains(path, "/") || strings.Contains(home, "/")
 	clean := filepath.Clean(path)
 	if home != "" {
 		homeClean := filepath.Clean(home)
@@ -51,6 +54,9 @@ func MaskPath(path string, home string, username string) string {
 	if username != "" {
 		clean = strings.ReplaceAll(clean, "/Users/"+username, "/Users/<user>")
 		clean = strings.ReplaceAll(clean, username, "<user>")
+	}
+	if preferSlash {
+		clean = strings.ReplaceAll(clean, "\\", "/")
 	}
 	return clean
 }

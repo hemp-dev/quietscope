@@ -9,16 +9,27 @@ import (
 	"github.com/hemp-dev/quietscope/internal/audit"
 )
 
-func TestAIToolCatalogContainsHermesOpenCodeAndQwen(t *testing.T) {
+func TestAIToolCatalogContainsHermesOpenCodeGeminiAntigravityAndQwen(t *testing.T) {
 	defs := AIToolDefinitions("/Users/alice")
 	ids := map[string]bool{}
+	binaries := map[string][]string{}
 	for _, def := range defs {
 		ids[def.ID] = true
+		binaries[def.ID] = def.BinaryNames
 	}
-	for _, id := range []string{"hermes-agent", "opencode", "qwen-code"} {
+	for _, id := range []string{"hermes-agent", "opencode", "gemini-cli", "google-antigravity", "qwen-code"} {
 		if !ids[id] {
 			t.Fatalf("expected catalog id %s", id)
 		}
+	}
+	if !containsAnyPattern(strings.Join(binaries["gemini-cli"], ","), []string{"gemini"}) {
+		t.Fatal("expected Gemini CLI to own the gemini binary")
+	}
+	if containsAnyPattern(strings.Join(binaries["google-antigravity"], ","), []string{"gemini"}) {
+		t.Fatal("Antigravity should not be detected from the Gemini CLI binary alone")
+	}
+	if !containsAnyPattern(strings.Join(binaries["google-antigravity"], ","), []string{"agy"}) {
+		t.Fatal("expected Antigravity CLI agy binary")
 	}
 }
 

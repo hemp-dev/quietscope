@@ -16,6 +16,8 @@ import (
 	"github.com/hemp-dev/quietscope/internal/audit"
 	"github.com/hemp-dev/quietscope/internal/platform"
 	"github.com/hemp-dev/quietscope/internal/safety"
+	toml "github.com/pelletier/go-toml/v2"
+	"gopkg.in/yaml.v3"
 )
 
 var dangerousCommandPatterns = []string{
@@ -74,6 +76,7 @@ func discoverAITools(cfg audit.RuntimeConfig) []audit.AIToolInfo {
 		{"Cursor", []string{"/Applications/Cursor.app", filepath.Join(cfg.HomeDir, "Applications", "Cursor.app")}},
 		{"Visual Studio Code", []string{"/Applications/Visual Studio Code.app", filepath.Join(cfg.HomeDir, "Applications", "Visual Studio Code.app")}},
 		{"Claude Desktop", []string{"/Applications/Claude.app", filepath.Join(cfg.HomeDir, "Applications", "Claude.app")}},
+		{"Google Antigravity", []string{"/Applications/Google Antigravity.app", filepath.Join(cfg.HomeDir, "Applications", "Google Antigravity.app")}},
 		{"LM Studio", []string{"/Applications/LM Studio.app", filepath.Join(cfg.HomeDir, "Applications", "LM Studio.app")}},
 		{"AnythingLLM", []string{"/Applications/AnythingLLM.app", filepath.Join(cfg.HomeDir, "Applications", "AnythingLLM.app")}},
 		{"GPT4All", []string{"/Applications/GPT4All.app", filepath.Join(cfg.HomeDir, "Applications", "GPT4All.app")}},
@@ -90,7 +93,7 @@ func discoverAITools(cfg audit.RuntimeConfig) []audit.AIToolInfo {
 		}
 	}
 
-	cliNames := []string{"claude", "codex", "aider", "interpreter", "open-interpreter", "ollama", "continue", "cline", "roo", "localai", "llama-cli", "llama-server"}
+	cliNames := []string{"claude", "codex", "gemini", "agy", "aider", "interpreter", "open-interpreter", "ollama", "continue", "cline", "roo", "localai", "llama-cli", "llama-server"}
 	for _, name := range cliNames {
 		if p := findExecutable(name, cfg); p != "" {
 			tools = append(tools, audit.AIToolInfo{Name: name, Kind: "cli", Path: p, Detected: true})
@@ -164,7 +167,7 @@ func inspectAIConfigs(cfg audit.RuntimeConfig) ([]audit.Finding, []audit.MCPConf
 			evidence += "; group-writable"
 		}
 		findings = append(findings, newFinding("ai-config-"+safeID(path), audit.CategoryAISecurity, "AI tool config path", status, severity, evidence, "Review AI tool configs for auto-approve, shell, MCP, file access, and network permissions. Do not store secrets in project-local AI configs.", ""))
-		if strings.HasSuffix(path, "mcp.json") || strings.HasSuffix(path, "claude_desktop_config.json") {
+		if isMCPConfigFilename(filepath.Base(path)) || strings.HasSuffix(path, "claude_desktop_config.json") {
 			infos = append(infos, audit.MCPConfigInfo{Path: path, Permission: platform.FormatPerm(meta.Mode), Risk: "metadata", Description: "MCP-related config path exists; parsed by MCP checks when valid JSON."})
 		}
 
@@ -199,6 +202,14 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 		filepath.Join(cfg.HomeDir, ".continue"),
 		filepath.Join(cfg.HomeDir, ".claude"),
 		filepath.Join(cfg.HomeDir, ".codex"),
+		filepath.Join(cfg.HomeDir, ".gemini"),
+		filepath.Join(cfg.HomeDir, ".gemini", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".antigravity"),
 		filepath.Join(cfg.HomeDir, ".ollama"),
 		filepath.Join(cfg.HomeDir, ".cline"),
 		filepath.Join(cfg.HomeDir, ".roo"),
@@ -210,6 +221,7 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 		filepath.Join(cfg.HomeDir, ".config", "Cursor"),
 		filepath.Join(cfg.HomeDir, ".config", "continue"),
 		filepath.Join(cfg.HomeDir, ".config", "claude"),
+		filepath.Join(cfg.HomeDir, ".config", "gemini"),
 		filepath.Join(cfg.HomeDir, ".config", "opencode"),
 		filepath.Join(cfg.HomeDir, ".config", "hermes"),
 
@@ -221,6 +233,7 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 		filepath.Join(cfg.HomeDir, ".claude.json"),
 		filepath.Join(cfg.HomeDir, ".claude_desktop_config.json"),
 		filepath.Join(cfg.HomeDir, ".codex", "config.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".cline", "settings.json"),
 		filepath.Join(cfg.HomeDir, ".cline", "state.json"),
 		filepath.Join(cfg.HomeDir, ".roo", "settings.json"),
@@ -275,6 +288,14 @@ func aiConfigPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []string {
 			filepath.Join(cfg.ProjectRoot, ".vscode", "settings.json"),
 			filepath.Join(cfg.ProjectRoot, ".continue"),
 			filepath.Join(cfg.ProjectRoot, ".continue", "config.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "settings.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.json"),
+			filepath.Join(cfg.ProjectRoot, ".agents"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.json"),
 			filepath.Join(cfg.ProjectRoot, ".roo"),
 			filepath.Join(cfg.ProjectRoot, ".cline"),
 			filepath.Join(cfg.ProjectRoot, "mcp.json"),
@@ -381,7 +402,20 @@ func candidateMCPPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []strin
 	paths := []string{
 		filepath.Join(cfg.HomeDir, ".cursor", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".claude", "claude_desktop_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "settings.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "mcp.yaml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity", "mcp_config.yaml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.toml"),
+		filepath.Join(cfg.HomeDir, ".gemini", "antigravity-cli", "mcp_config.yaml"),
+		filepath.Join(cfg.HomeDir, ".antigravity", "mcp.json"),
+		filepath.Join(cfg.HomeDir, ".antigravity", "mcp_config.json"),
 		filepath.Join(cfg.HomeDir, ".config", "claude", "claude_desktop_config.json"),
+		filepath.Join(cfg.HomeDir, ".config", "gemini", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".config", "Cursor", "User", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".config", "Code", "User", "mcp.json"),
 		filepath.Join(cfg.HomeDir, ".config", "opencode", "mcp.json"),
@@ -404,7 +438,20 @@ func candidateMCPPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []strin
 	if cfg.ProjectRoot != "" {
 		paths = append(paths,
 			filepath.Join(cfg.ProjectRoot, ".cursor", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "settings.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.toml"),
+			filepath.Join(cfg.ProjectRoot, ".gemini", "mcp.yaml"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.json"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.toml"),
+			filepath.Join(cfg.ProjectRoot, ".antigravity", "mcp_config.yaml"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.json"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.toml"),
+			filepath.Join(cfg.ProjectRoot, ".agents", "mcp_config.yaml"),
 			filepath.Join(cfg.ProjectRoot, "mcp.json"),
+			filepath.Join(cfg.ProjectRoot, "mcp.toml"),
+			filepath.Join(cfg.ProjectRoot, "mcp.yaml"),
 			filepath.Join(cfg.ProjectRoot, "claude_desktop_config.json"),
 		)
 		walkLimited(cfg.ProjectRoot, cfg.HomeDir, func(path string, d os.DirEntry) {
@@ -412,7 +459,7 @@ func candidateMCPPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []strin
 				return
 			}
 			base := strings.ToLower(filepath.Base(path))
-			if base == "mcp.json" || base == "claude_desktop_config.json" {
+			if isMCPConfigFilename(base) || base == "claude_desktop_config.json" {
 				paths = append(paths, path)
 			}
 		})
@@ -425,7 +472,7 @@ func candidateMCPPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []strin
 					return
 				}
 				base := strings.ToLower(filepath.Base(path))
-				if base == "mcp.json" || base == "claude_desktop_config.json" {
+				if isMCPConfigFilename(base) || base == "claude_desktop_config.json" {
 					paths = append(paths, path)
 				}
 			})
@@ -435,7 +482,7 @@ func candidateMCPPathsForOS(osName platform.OS, cfg audit.RuntimeConfig) []strin
 }
 
 func mcpSearchRootsForOS(osName platform.OS, home string) []string {
-	roots := []string{filepath.Join(home, ".cursor"), filepath.Join(home, ".claude"), filepath.Join(home, ".config")}
+	roots := []string{filepath.Join(home, ".cursor"), filepath.Join(home, ".claude"), filepath.Join(home, ".gemini"), filepath.Join(home, ".antigravity"), filepath.Join(home, ".config")}
 	if osName.IsDarwin() {
 		roots = append(roots, filepath.Join(home, "Library", "Application Support"))
 	}
@@ -459,6 +506,15 @@ func uniqueSortedStrings(values []string) []string {
 	return out
 }
 
+func isMCPConfigFilename(base string) bool {
+	switch strings.ToLower(base) {
+	case "mcp.json", "mcp.toml", "mcp.yaml", "mcp.yml", "mcp_config.json", "mcp_config.toml", "mcp_config.yaml", "mcp_config.yml":
+		return true
+	default:
+		return false
+	}
+}
+
 func parseMCPConfig(path string, maxFileSizeMB int) ([]mcpCommand, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -476,10 +532,47 @@ func parseMCPConfig(path string, maxFileSizeMB int) ([]mcpCommand, error) {
 		return nil, err
 	}
 	var root any
-	if err := json.Unmarshal(data, &root); err != nil {
-		return nil, err
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".toml":
+		if err := toml.Unmarshal(data, &root); err != nil {
+			return nil, err
+		}
+	case ".yaml", ".yml":
+		if err := yaml.Unmarshal(data, &root); err != nil {
+			return nil, err
+		}
+	default:
+		if err := json.Unmarshal(data, &root); err != nil {
+			return nil, err
+		}
 	}
+	root = normalizeStructuredValue(root)
 	return extractMCPCommands(root), nil
+}
+
+func normalizeStructuredValue(value any) any {
+	switch x := value.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, v := range x {
+			out[k] = normalizeStructuredValue(v)
+		}
+		return out
+	case map[any]any:
+		out := make(map[string]any, len(x))
+		for k, v := range x {
+			out[fmt.Sprint(k)] = normalizeStructuredValue(v)
+		}
+		return out
+	case []any:
+		out := make([]any, len(x))
+		for i, v := range x {
+			out[i] = normalizeStructuredValue(v)
+		}
+		return out
+	default:
+		return value
+	}
 }
 
 func extractMCPCommands(root any) []mcpCommand {
@@ -490,8 +583,8 @@ func extractMCPCommands(root any) []mcpCommand {
 				if server, ok := raw.(map[string]any); ok {
 					cmd := stringValue(server["command"])
 					args := stringSliceValue(server["args"])
-					urlStr := stringValue(server["url"])
-					transport := stringValue(server["transport"])
+					urlStr := firstStringValue(server, []string{"url", "endpoint", "baseUrl", "serverUrl", "httpUrl"})
+					transport := firstStringValue(server, []string{"transport", "type"})
 					if cmd != "" || len(args) > 0 || urlStr != "" || transport != "" {
 						out = append(out, mcpCommand{Name: name, Command: cmd, Args: args, URL: urlStr, Transport: transport})
 					}
@@ -503,8 +596,8 @@ func extractMCPCommands(root any) []mcpCommand {
 				if server, ok := raw.(map[string]any); ok {
 					cmd := stringValue(server["command"])
 					args := stringSliceValue(server["args"])
-					urlStr := stringValue(server["url"])
-					transport := stringValue(server["transport"])
+					urlStr := firstStringValue(server, []string{"url", "endpoint", "baseUrl", "serverUrl", "httpUrl"})
+					transport := firstStringValue(server, []string{"transport", "type"})
 					if cmd != "" || len(args) > 0 || urlStr != "" || transport != "" {
 						out = append(out, mcpCommand{Name: name, Command: cmd, Args: args, URL: urlStr, Transport: transport})
 					}
@@ -522,8 +615,8 @@ func recursiveMCPCommandSearch(value any, name string, out *[]mcpCommand) {
 	switch x := value.(type) {
 	case map[string]any:
 		cmd := stringValue(x["command"])
-		urlStr := stringValue(x["url"])
-		transport := stringValue(x["transport"])
+		urlStr := firstStringValue(x, []string{"url", "endpoint", "baseUrl", "serverUrl", "httpUrl"})
+		transport := firstStringValue(x, []string{"transport", "type"})
 		if cmd != "" || urlStr != "" || transport != "" {
 			*out = append(*out, mcpCommand{
 				Name:      name,
@@ -535,6 +628,9 @@ func recursiveMCPCommandSearch(value any, name string, out *[]mcpCommand) {
 			return
 		}
 		for k, v := range x {
+			if k == "mcpServers" || k == "servers" {
+				continue
+			}
 			recursiveMCPCommandSearch(v, k, out)
 		}
 	case []any:
@@ -590,6 +686,12 @@ func scanConfigForAutoApproval(path string, data []byte) (string, audit.Severity
 	}
 	if strings.Contains(lower, "auto_execute") || strings.Contains(lower, "\"turbo\"") || strings.Contains(lower, "autoexecution") {
 		return "Windsurf auto-execution / Turbo mode enabled with reduced confirmation gates", audit.SeverityHigh
+	}
+	if strings.Contains(lower, "always-proceed") || strings.Contains(lower, "dangerously-skip-permissions") || strings.Contains(lower, "approval-mode=yolo") || (strings.Contains(lower, "\"yolo\"") && (strings.Contains(lower, "approval") || strings.Contains(lower, "permission"))) {
+		return "Gemini/Antigravity permissions are configured to bypass or sharply reduce confirmation gates", audit.SeverityHigh
+	}
+	if strings.Contains(lower, "defaultapprovalmode") && (strings.Contains(lower, "auto") || strings.Contains(lower, "always") || strings.Contains(lower, "yolo")) {
+		return "Gemini CLI default approval mode reduces manual confirmation", audit.SeverityHigh
 	}
 	if strings.Contains(lower, "autoapprove") || strings.Contains(lower, "auto-approve") {
 		if strings.Contains(lower, "true") || strings.Contains(lower, "always") {
@@ -832,8 +934,8 @@ func checkRulesFilePermissions(path string) *audit.Finding {
 	if err != nil {
 		return nil
 	}
-	status := audit.StatusPass
-	severity := audit.SeverityInfo
+	var status audit.Status
+	var severity audit.Severity
 	evidence := fmt.Sprintf("path=%s mode=%s owner=%d group=%d", path, platform.FormatPerm(meta.Mode), meta.UID, meta.GID)
 
 	if platform.IsWorldWritable(meta.Mode) {
@@ -957,6 +1059,7 @@ func scanPromptInjectionArtifacts(cfg audit.RuntimeConfig) ([]audit.Finding, []a
 			filepath.Join(root, ".cursorrules"),
 			filepath.Join(root, "CLAUDE.md"),
 			filepath.Join(root, "CLAUDE.local.md"),
+			filepath.Join(root, "GEMINI.md"),
 			filepath.Join(root, "AGENTS.md"),
 			filepath.Join(root, ".clinerules"),
 			filepath.Join(root, ".github", "copilot-instructions.md"),
@@ -1000,7 +1103,7 @@ func shouldScanPromptFile(path string) bool {
 		return true
 	}
 	switch base {
-	case "package.json", "makefile", "taskfile.yml", "taskfile.yaml", "justfile", "agents.md", "claude.md", ".cursorrules":
+	case "package.json", "makefile", "taskfile.yml", "taskfile.yaml", "justfile", "agents.md", "claude.md", "gemini.md", ".cursorrules":
 		return true
 	default:
 		return false

@@ -19,6 +19,17 @@ func TestAIArtifactClassificationCriticalProjectAgents(t *testing.T) {
 	}
 }
 
+func TestAIArtifactClassificationCriticalProjectGemini(t *testing.T) {
+	impact, score := ClassifyAIContextImpact("/tmp/project/GEMINI.md", "instruction", "Gemini", "project", false, false, false, false)
+	if impact != "critical" || score < 81 {
+		t.Fatalf("expected critical project GEMINI.md, got %s %d", impact, score)
+	}
+	likelihood := EstimateAutoLoadedLikelihood("/tmp/project/GEMINI.md", "instruction", "Gemini", "project")
+	if likelihood != "critical" {
+		t.Fatalf("expected critical auto-loaded likelihood, got %s", likelihood)
+	}
+}
+
 func TestAIArtifactClassificationWritableInstruction(t *testing.T) {
 	impact, score := ClassifyAIContextImpact("/tmp/project/instructions.md", "instruction", "Generic", "project", false, true, false, false)
 	if impact != "critical" || score < 90 {
@@ -50,12 +61,25 @@ func TestAIDirectoryCategoryDetection(t *testing.T) {
 		"/Users/alice/Library/Logs/Claude":              "logs",
 		"/Users/alice/project/.cursor/rules":            "rules",
 		"/Users/alice/project/.claude/skills":           "skills",
+		"/Users/alice/project/.agents/skills":           "skills",
+		"/Users/alice/.gemini/antigravity-cli/plugins":  "extensions",
 		"/Users/alice/Library/Application Support/Code": "extensions",
 	}
 	for path, expected := range cases {
 		if got := ClassifyAIDirectoryCategory(path); got != expected {
 			t.Fatalf("expected %s for %s, got %s", expected, path, got)
 		}
+	}
+}
+
+func TestGeminiAntigravityArtifactPathClassification(t *testing.T) {
+	artifactType, tool, ok := classifyAIArtifactPath("/tmp/project/.agents/mcp_config.json", false)
+	if !ok || artifactType != "mcp_config" || tool != "Google Antigravity" {
+		t.Fatalf("unexpected Antigravity classification: ok=%t type=%s tool=%s", ok, artifactType, tool)
+	}
+	artifactType, tool, ok = classifyAIArtifactPath("/tmp/project/.gemini/settings.json", false)
+	if !ok || artifactType != "settings" || tool != "Gemini" {
+		t.Fatalf("unexpected Gemini classification: ok=%t type=%s tool=%s", ok, artifactType, tool)
 	}
 }
 
