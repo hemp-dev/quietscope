@@ -9,9 +9,12 @@
   --bg: #090b0e;
   --fg: #f1f5f9;
   --muted: #94a3b8;
+  --muted-2: #64748b;
   --panel: rgba(26, 36, 52, 0.45);
+  --panel-strong: rgba(13, 22, 34, 0.72);
   --panel-hover: rgba(255, 255, 255, 0.05);
   --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(148, 163, 184, 0.18);
   --border-focus: #10b981;
   --accent: #10b981;
   --accent-glow: rgba(16, 185, 129, 0.25);
@@ -85,11 +88,11 @@ body {
 header {
   border-bottom: 1px solid var(--line);
   background: rgba(17, 21, 28, 0.5);
-  padding: 14px 24px;
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 52px;
+  height: 64px;
 }
 
 header h1 {
@@ -104,6 +107,19 @@ header h1 {
 
 header h1 svg {
   color: var(--accent);
+  filter: drop-shadow(0 0 12px var(--accent-glow));
+}
+
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .window-controls {
@@ -135,7 +151,7 @@ header h1 svg {
 main {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: calc(100% - 52px);
+  height: calc(100% - 64px);
   overflow: hidden;
 }
 
@@ -152,6 +168,27 @@ main {
   -webkit-backdrop-filter: blur(20px);
 }
 
+.sidebar.locked {
+  position: relative;
+}
+
+.sidebar.locked::after {
+  content: "Locked during audit";
+  position: sticky;
+  bottom: 0;
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 242, 254, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 242, 254, 0.08);
+  color: var(--accent-2);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 .panel-title {
   font-size: 11px;
   text-transform: uppercase;
@@ -162,6 +199,15 @@ main {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.panel-title .small-note {
+  margin-left: auto;
+  color: var(--accent-2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .sidebar-sub-title {
@@ -204,6 +250,33 @@ form {
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field-hint {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.valid-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.valid-dot {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: var(--accent);
+  background: rgba(16, 185, 129, 0.08);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .form-group input[type="text"]:focus,
@@ -273,6 +346,22 @@ button.primary {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+button.primary .button-copy,
+button .button-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+button.primary .button-copy small,
+button .button-copy small {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.76;
+}
+
 button.primary:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 0 30px rgba(16, 185, 129, 0.9);
@@ -300,10 +389,22 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.ghost-button {
+  background: rgba(0, 242, 254, 0.06);
+  border-color: rgba(0, 242, 254, 0.24);
+  color: var(--accent-2);
+}
+
+.disabled-note {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 /* Workspace Panels styling */
 .workspace {
   display: grid;
-  grid-template-rows: 180px 1fr;
+  grid-template-rows: 170px 1fr;
   overflow: hidden;
   height: 100%;
   background: rgba(7, 9, 14, 0.2);
@@ -320,33 +421,28 @@ button:disabled {
 
 .runs-list {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 12px;
-  overflow-y: auto;
-  max-height: 140px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 102px;
+  max-height: 118px;
   padding-bottom: 8px;
   position: relative;
-  padding-left: 36px;
+  padding-left: 0;
 }
 
 .runs-list::before {
-  content: "";
-  position: absolute;
-  left: 14px;
-  top: 12px;
-  bottom: 12px;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.06);
-  z-index: 1;
+  display: none;
 }
 
 .run-item {
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 12px 14px;
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -355,14 +451,15 @@ button:disabled {
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  min-width: 250px;
 }
 
 .run-item::before {
   content: "";
   position: absolute;
-  left: -27px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 12px;
+  top: 12px;
+  transform: none;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -403,6 +500,7 @@ button:disabled {
   font-family: monospace;
   font-weight: 700;
   font-size: 13px;
+  padding-left: 22px;
 }
 
 .run-meta {
@@ -414,6 +512,21 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.run-progress {
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.run-progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
 }
 
 .status-pill {
@@ -444,6 +557,488 @@ button:disabled {
   padding: 24px;
   gap: 20px;
   background: rgba(10, 14, 22, 0.2);
+}
+
+.onboarding-surface {
+  height: 100%;
+  padding: 24px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(360px, 1.35fr);
+  gap: 24px;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(16, 185, 129, 0.14), transparent 34%),
+    radial-gradient(circle at 90% 12%, rgba(0, 242, 254, 0.10), transparent 30%);
+}
+
+.onboarding-hero,
+.onboarding-card,
+.history-empty-card,
+.phase-card,
+.next-actions,
+.control-summary-chip,
+.artifact-table-wrap,
+.modal-panel {
+  background: var(--panel-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+}
+
+.onboarding-hero {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.hero-mark {
+  width: 74px;
+  height: 74px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.28), rgba(16, 185, 129, 0.06) 62%, transparent);
+  color: var(--accent);
+  box-shadow: 0 0 34px rgba(16, 185, 129, 0.24);
+}
+
+.onboarding-hero h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.4px;
+}
+
+.onboarding-hero p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  max-width: 580px;
+}
+
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trust-strip span,
+.chip,
+.backup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--accent);
+}
+
+.chip.cyan {
+  color: var(--accent-2);
+  border-color: rgba(0, 242, 254, 0.22);
+  background: rgba(0, 242, 254, 0.08);
+}
+
+.chip.warn {
+  color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.24);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.chip.bad {
+  color: var(--bad);
+  border-color: rgba(244, 63, 94, 0.24);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.onboarding-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.config-list {
+  display: grid;
+  gap: 10px;
+}
+
+.config-list div,
+.phase-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  color: #dbe7f2;
+  font-size: 12px;
+}
+
+.config-list b {
+  color: var(--fg);
+}
+
+.check-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #07120e;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.history-empty-card {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-history-box {
+  min-height: 110px;
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.phase-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.phase-list {
+  display: grid;
+  gap: 10px;
+}
+
+.phase-step {
+  grid-template-columns: 24px 1fr auto;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.phase-step.done {
+  color: var(--accent);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.phase-step.active {
+  color: var(--accent-2);
+  border-color: rgba(0, 242, 254, 0.32);
+  background: rgba(0, 242, 254, 0.08);
+}
+
+.phase-step.pending {
+  color: var(--muted);
+}
+
+.phase-number {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.summary-copy {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.next-actions {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.next-actions-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.next-action {
+  min-height: 58px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.log-status-row {
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  display: inline-block;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.live-dot.pulse {
+  animation: pulse-cyan 1.2s infinite alternate;
+}
+
+.findings-summary-bar {
+  flex-shrink: 0;
+}
+
+.control-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.control-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.control-summary-chip {
+  padding: 12px;
+  display: grid;
+  gap: 2px;
+}
+
+.control-summary-chip b {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.control-summary-chip span {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.control-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 130px 130px 130px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.control-toolbar input,
+.control-toolbar select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 11px;
+  outline: none;
+}
+
+.artifact-table-wrap {
+  overflow: auto;
+  flex: 1;
+}
+
+.artifact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.artifact-table th,
+.artifact-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.artifact-table th {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+  background: rgba(255, 255, 255, 0.02);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.artifact-table tr.selected {
+  background: rgba(16, 185, 129, 0.08);
+  outline: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.artifact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.artifact-action {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+
+.artifact-action.soft-primary {
+  color: var(--accent);
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.artifact-action.caution {
+  color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.path-cell {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  color: #cbd5e1;
+  word-break: break-all;
+}
+
+.backup-chip {
+  color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.32);
+  background: rgba(245, 158, 11, 0.08);
+  padding: 2px 6px;
+}
+
+.modal-panel {
+  width: min(920px, 96vw);
+  max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header,
+.modal-footer {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-body {
+  padding: 16px 18px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.modal-summary {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr 0.9fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.modal-summary div {
+  padding: 12px;
+  border-right: 1px solid var(--line);
+}
+
+.modal-summary div:last-child {
+  border-right: none;
+}
+
+.modal-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.modal-summary b {
+  font-size: 12px;
+}
+
+.backup-note {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(16, 185, 129, 0.26);
+  background: rgba(16, 185, 129, 0.08);
+  color: #dffdf0;
+  font-size: 12px;
+}
+
+.diff-preview,
+.edit-preview {
+  white-space: pre-wrap;
+  background: #05070a;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 340px;
+  overflow: auto;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.diff-line {
+  display: block;
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+
+.diff-line.add {
+  color: #86efac;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.diff-line.remove {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.16);
 }
 
 .detail-section:last-child {
@@ -750,32 +1345,39 @@ button:disabled {
           <span class="dot minimize"></span>
           <span class="dot expand"></span>
         </div>
-        <h1>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          Quietscope
-        </h1>
+        <div class="brand-lockup">
+          <h1>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 7v2M12 15v2M7 12h2M15 12h2"/>
+            </svg>
+            Quietscope
+          </h1>
+          <div class="brand-subtitle">Defensive Security Audit - Local Only</div>
+        </div>
       </div>
       <div class="notice">Developer Preview v0.6.0</div>
     </header>
 
     <main>
       <!-- Sidebar panel config -->
-      <div class="sidebar">
+      <div class="sidebar" id="setup-sidebar">
         <div class="panel-title">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Audit Configurations
+          Audit Setup
+          <span class="small-note">Local-only</span>
         </div>
         <form id="config-form">
           <div class="sidebar-sub-title" title="Scope parameters for filesystem audits">Scan Scope</div>
           <div class="checkbox-grid" style="margin-bottom: 10px;">
-            <label class="checkbox-label" title="Deep Scan: Inspects actual file contents (e.g. prompt rules) rather than just system metadata"><input type="checkbox" id="deep"><span>Deep Scan</span></label>
+            <label class="checkbox-label" title="Deep Scan: Inspects actual file contents (e.g. prompt rules) rather than just system metadata"><input type="checkbox" id="deep" checked><span>Deep Scan</span></label>
             <label class="checkbox-label" title="AI Audit: Analyzes local LLMs, MCP configurations, client/server ports, and security vectors"><input type="checkbox" id="ai-audit" checked><span>AI Audit</span></label>
             <label class="checkbox-label" title="No Sudo: Skips checks requiring administrative privileges to ensure non-intrusive scanning"><input type="checkbox" id="no-sudo" checked><span>No Sudo</span></label>
           </div>
+          <div class="field-hint">Respects .gitignore and common build/output directories.</div>
 
-          <div class="sidebar-sub-title" title="Formats to export your scan report assets">Report Formats</div>
+          <div class="sidebar-sub-title" title="Formats to export your scan report assets">Report Outputs</div>
           <div class="checkbox-grid">
             <label class="checkbox-label" title="HTML: Generates a self-contained offline security report dashboard"><input type="checkbox" id="want-html" checked><span>HTML</span></label>
             <label class="checkbox-label" title="JSON: Generates structured, machine-readable audit report payload"><input type="checkbox" id="want-json" checked><span>JSON</span></label>
@@ -784,22 +1386,37 @@ button:disabled {
 
           <div class="form-group">
             <label for="output-dir">Output Directory</label>
-            <input type="text" id="output-dir" placeholder="Default Desktop folder">
+            <div class="valid-field">
+              <input type="text" id="output-dir" placeholder="/Users/<user>/Desktop/quietscope-desktop-audit">
+              <span class="valid-dot" title="Valid local path">✓</span>
+            </div>
+            <div class="field-hint">Where offline reports will be saved. All paths stay on this machine.</div>
           </div>
 
           <div class="form-group">
             <label for="project-root">Project Root (Deep Scan)</label>
-            <input type="text" id="project-root" placeholder="Optional directory path">
+            <div class="valid-field">
+              <input type="text" id="project-root" placeholder="/Users/<user>/Projects/quietscope">
+              <span class="valid-dot" title="Optional local path">✓</span>
+            </div>
+            <div class="field-hint">Optional root to scan when Deep Scan is enabled.</div>
           </div>
 
           <div class="form-group">
             <label for="max-file-size-mb">Max File Size (MiB)</label>
-            <input type="number" id="max-file-size-mb" min="1" step="1" value="5">
+            <div class="valid-field">
+              <input type="number" id="max-file-size-mb" min="1" step="1" value="100">
+              <span class="valid-dot" title="Valid limit">✓</span>
+            </div>
+            <div class="field-hint">Files larger than this are skipped to keep scans predictable.</div>
           </div>
 
-          <button type="submit" class="primary">
+          <button type="submit" class="primary" id="start-audit-btn" title="Run a local-only defensive audit">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Start Defensive Audit
+            <span class="button-copy">
+              <span>Start Defensive Audit</span>
+              <small>Run a local-only security audit</small>
+            </span>
           </button>
         </form>
       </div>
@@ -809,7 +1426,7 @@ button:disabled {
         <div class="runs-panel">
           <div class="panel-title">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Active / Past Audits
+            Audit History
           </div>
           <div class="runs-list" id="runs-list">
             <div class="empty-state">No audits initiated yet. Configure options and start an audit.</div>
@@ -927,7 +1544,14 @@ button:disabled {
 
   function escapeHTML(str) {
     if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function maskPrivatePaths(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/\/Users\/[^/\s"'`]+/g, "/Users/<user>")
+      .replace(/\\Users\\[^\\\s"'`]+/g, "\\Users\\<user>");
   }
 
   function formatBytes(bytes) {
@@ -936,6 +1560,132 @@ button:disabled {
     const sizes = ["B", "KiB", "MiB", "GiB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  }
+
+  function renderOnboardingHTML() {
+    return `
+      <div class="onboarding-surface">
+        <section class="onboarding-hero">
+          <div class="hero-mark">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M8.5 12.5l2.2 2.2 4.8-5.2"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Ready for local audit</h2>
+            <p>Quietscope runs entirely on this machine. Code, findings, reports, and AI artifact metadata stay local and are written only to the configured output directory.</p>
+          </div>
+          <div class="trust-strip">
+            <span>100% local</span>
+            <span>No telemetry</span>
+            <span>No network uploads</span>
+          </div>
+          <button class="ghost-button" type="button" title="Review scan scope and configured options">Review scan scope</button>
+        </section>
+
+        <section class="onboarding-card">
+          <div class="panel-title" style="margin:0;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Configuration summary
+          </div>
+          <div class="config-list">
+            <div><span class="check-icon">✓</span><span><b>Scan Scope:</b> Deep Scan, AI Audit, No Sudo (user-level only)</span></div>
+            <div><span class="check-icon">✓</span><span><b>Outputs:</b> HTML, JSON, Text</span></div>
+            <div><span class="check-icon">✓</span><span><b>Project Root:</b> /Users/&lt;user&gt;/Projects/quietscope</span></div>
+            <div><span class="check-icon">✓</span><span><b>Output Directory:</b> /Users/&lt;user&gt;/Desktop/quietscope-desktop-audit</span></div>
+            <div><span class="check-icon">✓</span><span><b>Max File Size:</b> 100 MiB</span></div>
+          </div>
+
+          <div class="history-empty-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div class="panel-title" style="margin:0;color:var(--fg);">Audit History</div>
+              <button type="button" disabled title="Available after your first completed audit">Open Report</button>
+            </div>
+            <div class="empty-history-box">
+              <div>
+                <div style="font-weight:800;color:#dbe7f2;margin-bottom:4px;">No audits initiated yet.</div>
+                <div>Your audit history, status, and report shortcuts will appear here after the first run.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function syncSetupLock(isLocked) {
+    const sidebar = document.getElementById("setup-sidebar");
+    const form = document.getElementById("config-form");
+    const startButton = document.getElementById("start-audit-btn");
+    if (sidebar) sidebar.classList.toggle("locked", isLocked);
+    if (!form) return;
+    Array.from(form.elements).forEach(el => {
+      if (!el) return;
+      el.disabled = isLocked;
+    });
+    if (startButton) {
+      startButton.title = isLocked ? "Disabled while an audit is running. Cancel or wait for completion." : "Run a local-only defensive audit";
+      const copy = startButton.querySelector(".button-copy span");
+      const small = startButton.querySelector(".button-copy small");
+      if (copy) copy.textContent = isLocked ? "Audit Running..." : "Start Defensive Audit";
+      if (small) small.textContent = isLocked ? "Setup is locked during this run" : "Run a local-only security audit";
+    }
+  }
+
+  function phaseStepsFor(job, pct, isRunning) {
+    const phases = [
+      { name: "Scanning AI security", hint: "MCP configs, clients, local AI ports" },
+      { name: "Privacy checks", hint: "Secrets, environment files, local exposure" },
+      { name: "Persistence review", hint: "Launch agents and startup surfaces" },
+      { name: "Storage dry-run", hint: "Report output and cleanup candidates" }
+    ];
+    const activeIndex = job.status === "queued" ? 0 : Math.min(3, Math.max(0, Math.floor(Math.max(0, pct - 1) / 25)));
+    return phases.map((phase, index) => {
+      let status = "pending";
+      if (job.status === "completed" || pct >= 100) status = "done";
+      else if (isRunning && index < activeIndex) status = "done";
+      else if (isRunning && index === activeIndex) status = "active";
+      return { ...phase, status, number: index + 1 };
+    });
+  }
+
+  function renderPhaseTracker(job, pct, isRunning) {
+    const steps = phaseStepsFor(job, pct, isRunning);
+    return `
+      <div class="phase-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div class="panel-title" style="margin:0;color:var(--fg);">Current Phase Tracker</div>
+          <span class="chip cyan">${isRunning ? "Live" : job.status}</span>
+        </div>
+        <div class="phase-list">
+          ${steps.map(step => `
+            <div class="phase-step ${step.status}">
+              <span class="phase-number">${step.status === "done" ? "✓" : step.number}</span>
+              <span>
+                <b>${step.name}</b><br>
+                <small>${step.status === "active" ? "Running now" : step.status === "done" ? "Completed" : "Pending"} - ${step.hint}</small>
+              </span>
+              ${step.status === "active" ? '<span class="live-dot pulse"></span>' : ''}
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDisabledReason(label, enabled, reason) {
+    return enabled ? "" : `<div class="disabled-note">${label}: ${reason}</div>`;
+  }
+
+  function renderDiffHTML(diff) {
+    const text = maskPrivatePaths(diff || "No changes");
+    return text.split("\n").map(line => {
+      let cls = "diff-line";
+      if (line.startsWith("+") && !line.startsWith("+++")) cls += " add";
+      if (line.startsWith("-") && !line.startsWith("---")) cls += " remove";
+      return `<span class="${cls}">${escapeHTML(line) || "&nbsp;"}</span>`;
+    }).join("");
   }
 
   window.copyRemediation = function(text) {
@@ -1048,15 +1798,15 @@ button:disabled {
     
     const evidenceSection = f.evidence ? `
       <div style="display: flex; flex-direction: column; gap: 6px;">
-        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Evidence & Analysis</span>
-        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto;">${escapeHTML(f.evidence)}</div>
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); display:flex; justify-content:space-between;">Evidence & Analysis <small style="color:var(--accent-2);font-weight:800;">Collapse</small></span>
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto;">${escapeHTML(maskPrivatePaths(f.evidence))}</div>
       </div>
     ` : '';
 
     const commandSection = f.command_checked ? `
       <div style="display: flex; flex-direction: column; gap: 6px;">
         <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Detection Command</span>
-        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: var(--muted);">${escapeHTML(f.command_checked)}</div>
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: var(--muted);">${escapeHTML(maskPrivatePaths(f.command_checked))}</div>
       </div>
     ` : '';
 
@@ -1068,7 +1818,7 @@ button:disabled {
             ${statusBadge}
             <span style="font-size: 10px; color: var(--muted); margin-left: auto; font-family: monospace;">ID: ${escapeHTML(f.id)}</span>
           </div>
-          <h2 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--fg); line-height: 1.4;">${escapeHTML(f.title)}</h2>
+          <h2 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--fg); line-height: 1.35;">${escapeHTML(f.title)}</h2>
           <div style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Category: ${escapeHTML(f.category)}</div>
         </div>
 
@@ -1077,7 +1827,7 @@ button:disabled {
 
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Remediation Recommendation</span>
-            <div style="background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 12px; font-size: 12px; color: var(--fg); line-height: 1.5;">${escapeHTML(f.recommendation || 'Verify manual remediation.')}</div>
+            <div style="background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 12px; font-size: 12px; color: var(--fg); line-height: 1.5;">${escapeHTML(maskPrivatePaths(f.recommendation || 'Verify manual remediation.'))}</div>
           </div>
 
           ${commandSection}
@@ -1103,14 +1853,14 @@ button:disabled {
             const disableText = path.endsWith('.disabled') ? 'Enable Skill' : 'Disable Skill';
             
             let btns = `
-              <button class="danger" style="padding: 8px 14px; font-size: 11px;" onclick="window.executeRemediation('delete', '${escapeHTML(path)}')">
+              <button class="danger" style="padding: 8px 14px; font-size: 11px;" title="Cautious action. Review evidence before deleting." onclick="window.executeRemediation('delete', '${escapeHTML(path)}')">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
                 Delete File
               </button>
             `;
             if (isSkill) {
               btns += `
-                <button class="danger" style="padding: 8px 14px; font-size: 11px; color: var(--warn); border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.05);" onclick="window.executeRemediation('disable', '${escapeHTML(path)}')">
+                <button class="danger" style="padding: 8px 14px; font-size: 11px; color: var(--warn); border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.05);" title="Preview or manually verify before disabling this artifact." onclick="window.executeRemediation('disable', '${escapeHTML(path)}')">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
                   ${disableText}
                 </button>
@@ -1118,7 +1868,7 @@ button:disabled {
             }
             if (hasSuspiciousPatterns) {
               btns += `
-                <button class="primary" style="padding: 8px 14px; font-size: 11px; background: var(--accent); color: var(--bg); border-color: var(--accent);" onclick="window.executeRemediation('fix', '${escapeHTML(path)}')">
+                <button class="primary" style="padding: 8px 14px; font-size: 11px; background: var(--accent); color: var(--bg); border-color: var(--accent);" title="Local fix action. Review generated changes before writing." onclick="window.executeRemediation('fix', '${escapeHTML(path)}')">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                   Fix Patterns
                 </button>
@@ -1247,32 +1997,95 @@ button:disabled {
   function desktopArtifactButton(artifact, action, label) {
     const availability = desktopActionFor(artifact, action);
     const disabled = !availability.available;
-    const title = disabled ? (availability.disabled_reason || artifact.disabled_reason || "Unavailable") : "Preview changes; backup will be created before write.";
-    return `<button style="padding: 5px 8px; font-size: 10px;" ${disabled ? "disabled" : ""} title="${escapeHTML(title)}" onclick="window.previewDesktopArtifactAction('${artifact.id.replace(/'/g, "\\'")}','${action}')">${label}</button>`;
+    const risky = ["edit", "disable", "enable", "fix", "clean", "delete", "restore"].includes(action);
+    const title = disabled ? (availability.disabled_reason || artifact.disabled_reason || "Unavailable") : (risky ? "Preview changes; backup will be created before write." : "Read-only local preview.");
+    const className = action === "delete" ? "danger" : (risky ? "caution" : "soft-primary");
+    return `<button class="artifact-action ${className}" ${disabled ? "disabled" : ""} title="${escapeHTML(title)}" onclick="window.previewDesktopArtifactAction('${artifact.id.replace(/'/g, "\\'")}','${action}')">${label}</button>`;
   }
+
+  window.filterDesktopArtifacts = function() {
+    const q = (document.getElementById("artifact-search")?.value || "").toLowerCase();
+    const tool = (document.getElementById("artifact-tool")?.value || "").toLowerCase();
+    const kind = (document.getElementById("artifact-kind")?.value || "").toLowerCase();
+    const risk = (document.getElementById("artifact-risk")?.value || "").toLowerCase();
+    const rows = Array.from(document.querySelectorAll("#desktop-artifacts-body tr"));
+    let visible = 0;
+    rows.forEach(row => {
+      const blob = row.getAttribute("data-search") || "";
+      const matches = (!q || blob.includes(q)) &&
+        (!tool || row.getAttribute("data-tool") === tool) &&
+        (!kind || row.getAttribute("data-kind") === kind) &&
+        (!risk || row.getAttribute("data-risk") === risk);
+      row.style.display = matches ? "" : "none";
+      if (matches) visible += 1;
+    });
+    const counter = document.getElementById("artifact-visible-count");
+    if (counter) counter.textContent = String(visible);
+    const footerCounter = document.getElementById("artifact-visible-footer");
+    if (footerCounter) footerCounter.textContent = String(visible);
+  };
 
   function renderDesktopControlCenter() {
     const artifacts = (state.reportData && state.reportData.manageable_artifacts) || [];
     if (!artifacts.length) {
       return '<div class="empty-state">No manageable artifacts found. Run an AI audit with project scope to populate the AI Control Center.</div>';
     }
+    const manualReview = artifacts.filter(a => ["medium", "high", "critical"].includes(String(a.risk || "").toLowerCase())).length;
+    const backupsAvailable = artifacts.filter(a => desktopActionFor(a, "restore").available).length;
+    const disabledActions = artifacts.reduce((sum, a) => sum + ["read","edit","disable","enable","fix","clean","delete","restore"].filter(action => !desktopActionFor(a, action).available).length, 0);
+    const optionList = (values) => Array.from(new Set(values.filter(Boolean))).sort().map(v => `<option value="${escapeHTML(String(v).toLowerCase())}">${escapeHTML(v)}</option>`).join("");
+    const toolOptions = optionList(artifacts.map(a => a.tool));
+    const kindOptions = optionList(artifacts.map(a => a.kind));
+    const riskOptions = optionList(artifacts.map(a => a.risk));
     const rows = artifacts.map(a => {
       const actions = ["read","edit","disable","enable","fix","clean","delete","restore"].map(action => desktopArtifactButton(a, action, action)).join(" ");
-      return `<tr><td>${escapeHTML(a.tool)}</td><td>${escapeHTML(a.kind)}</td><td>${escapeHTML(a.scope)}</td><td>${escapeHTML(a.risk)}</td><td style="font-family:monospace;word-break:break-all">${escapeHTML(a.path)}</td><td>${actions}</td></tr>`;
+      const risk = String(a.risk || "info").toLowerCase();
+      const backupNeeded = ["medium", "high", "critical"].includes(risk);
+      const selected = a === artifacts[0] ? "selected" : "";
+      const searchable = [a.tool, a.kind, a.scope, a.risk, a.path].map(x => String(x || "").toLowerCase()).join(" ");
+      return `
+        <tr class="${selected}" data-search="${escapeHTML(searchable)}" data-tool="${escapeHTML(String(a.tool || "").toLowerCase())}" data-kind="${escapeHTML(String(a.kind || "").toLowerCase())}" data-risk="${escapeHTML(risk)}">
+          <td>${escapeHTML(a.tool)}</td>
+          <td>${escapeHTML(a.kind)}</td>
+          <td>${escapeHTML(a.scope)}</td>
+          <td><span class="badge ${escapeHTML(risk)}">${escapeHTML(a.risk || "info")}</span> ${backupNeeded ? '<span class="backup-chip">Backup first</span>' : ''}</td>
+          <td class="path-cell">${escapeHTML(maskPrivatePaths(a.path))}</td>
+          <td><div class="artifact-actions">${actions}</div></td>
+        </tr>
+      `;
     }).join("");
     return `
       <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; height: 100%;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div class="control-header">
           <div>
-            <div style="font-size:15px;font-weight:800;">AI Control Center</div>
+            <div style="font-size:17px;font-weight:800;">AI Control Center</div>
             <div style="font-size:11px;color:var(--muted);">Preview changes, create backups, and restore safely through the Wails bridge.</div>
           </div>
+          <span class="chip">Backup-first safety model</span>
         </div>
-        <div style="overflow:auto;border:1px solid var(--line);border-radius:8px;">
-          <table style="width:100%;border-collapse:collapse;font-size:11px;">
-            <thead><tr style="color:var(--muted);text-align:left;"><th style="padding:8px;border-bottom:1px solid var(--line);">Tool</th><th style="padding:8px;border-bottom:1px solid var(--line);">Kind</th><th style="padding:8px;border-bottom:1px solid var(--line);">Scope</th><th style="padding:8px;border-bottom:1px solid var(--line);">Risk</th><th style="padding:8px;border-bottom:1px solid var(--line);">Path</th><th style="padding:8px;border-bottom:1px solid var(--line);">Actions</th></tr></thead>
-            <tbody>${rows}</tbody>
+        <div class="control-summary-grid">
+          <div class="control-summary-chip"><b>${artifacts.length}</b><span>AI Artifacts</span></div>
+          <div class="control-summary-chip"><b style="color:var(--warn);">${manualReview}</b><span>Manual Review</span></div>
+          <div class="control-summary-chip"><b style="color:var(--accent);">${backupsAvailable}</b><span>Backups Available</span></div>
+          <div class="control-summary-chip"><b style="color:var(--bad);">${disabledActions}</b><span>Disabled Actions</span></div>
+          <div class="control-summary-chip"><b style="color:var(--accent-2);">Local</b><span>No silent deletion</span></div>
+        </div>
+        <div class="control-toolbar">
+          <input id="artifact-search" type="text" placeholder="Search artifacts by name or path..." oninput="window.filterDesktopArtifacts()">
+          <select id="artifact-tool" onchange="window.filterDesktopArtifacts()"><option value="">All Tools</option>${toolOptions}</select>
+          <select id="artifact-kind" onchange="window.filterDesktopArtifacts()"><option value="">All Kinds</option>${kindOptions}</select>
+          <select id="artifact-risk" onchange="window.filterDesktopArtifacts()"><option value="">All Risks</option>${riskOptions}</select>
+          <span class="chip cyan"><span id="artifact-visible-count">${artifacts.length}</span> shown</span>
+        </div>
+        <div class="artifact-table-wrap">
+          <table class="artifact-table">
+            <thead><tr><th>Tool</th><th>Kind</th><th>Scope</th><th>Risk</th><th>Path</th><th>Actions</th></tr></thead>
+            <tbody id="desktop-artifacts-body">${rows}</tbody>
           </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;">
+          <span>Showing <span id="artifact-visible-footer">${artifacts.length}</span> of ${artifacts.length} artifacts</span>
+          <span class="chip warn">Backup-first required for Medium and High risk actions</span>
         </div>
       </div>
     `;
@@ -1283,29 +2096,92 @@ button:disabled {
     if (modal) return modal;
     modal = document.createElement("div");
     modal.id = "desktop-action-modal";
-    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;";
-    modal.innerHTML = '<div style="width:min(920px,96vw);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;"><h2 id="desktop-action-title" style="margin:0;font-size:16px;">Preview</h2><button id="desktop-action-close">Close</button></div><div id="desktop-action-body"></div></div>';
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);";
+    modal.innerHTML = `
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h2 id="desktop-action-title" style="margin:0;font-size:18px;">Preview action</h2>
+          <button id="desktop-action-close">Close</button>
+        </div>
+        <div id="desktop-action-body" class="modal-body"></div>
+        <div id="desktop-action-footer" class="modal-footer"></div>
+      </div>
+    `;
     document.body.appendChild(modal);
     document.getElementById("desktop-action-close").addEventListener("click", () => { modal.style.display = "none"; });
     return modal;
   }
 
+  window.closeDesktopActionModal = function() {
+    const modal = document.getElementById("desktop-action-modal");
+    if (modal) modal.style.display = "none";
+  };
+
   function desktopArtifactById(id) {
     return ((state.reportData && state.reportData.manageable_artifacts) || []).find(a => a.id === id);
+  }
+
+  function renderArtifactSummary(artifact, action) {
+    const risk = artifact.risk || "Unknown";
+    return `
+      <div class="modal-summary">
+        <div><span>Artifact Path</span><b class="path-cell">${escapeHTML(maskPrivatePaths(artifact.path))}</b></div>
+        <div><span>Action</span><b>${escapeHTML(action)}</b></div>
+        <div><span>Risk</span><b>${escapeHTML(risk)}</b></div>
+        <div><span>Backup Status</span><b style="color:var(--accent);">Ready</b><br><small style="color:var(--muted);">Will be created</small></div>
+      </div>
+    `;
+  }
+
+  function renderActionFooter(executeHandler, executeLabel) {
+    const footer = document.getElementById("desktop-action-footer");
+    if (!footer) return;
+    footer.innerHTML = `
+      <span style="color:var(--muted);font-size:11px;">Restore available after execution.</span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="window.closeDesktopActionModal()">Cancel</button>
+        <button class="primary" ${executeHandler ? `onclick='${executeHandler}'` : "disabled"}>${executeLabel || "Execute with backup"}</button>
+      </div>
+    `;
   }
 
   window.previewDesktopArtifactAction = function(id, action) {
     const artifact = desktopArtifactById(id);
     if (!artifact || !window.go || !window.go.main || !window.go.main.App) return;
     const modal = ensureDesktopActionModal();
+    const title = document.getElementById("desktop-action-title");
     const body = document.getElementById("desktop-action-body");
     const payload = { job_id: state.selectedId, action, path: artifact.path, artifact_id: artifact.id };
     if (artifact.kind === "mcp_server") payload.server_name = artifact.tool;
+    if (title) title.textContent = "Preview " + action;
     modal.style.display = "flex";
-    body.innerHTML = '<div class="empty-state">Preview changes</div>';
+    body.innerHTML = `${renderArtifactSummary(artifact, action)}<div class="empty-state" style="min-height:160px;">Preparing backup-first preview...</div>`;
+    renderActionFooter("", "Execute with backup");
     if (action === "edit" && artifact.kind !== "mcp_server") {
       window.go.main.App.ReadArtifact(artifact.path).then(content => {
-        body.innerHTML = `<textarea id="desktop-edit-content" style="width:100%;min-height:280px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;">${escapeHTML(content || "")}</textarea><pre id="desktop-action-diff" style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:260px;overflow:auto;"></pre><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;"><button onclick="window.previewDesktopEdit('${id.replace(/'/g, "\\'")}')">Preview changes</button><button class="primary" onclick="window.executeDesktopEdit('${id.replace(/'/g, "\\'")}')">Apply with backup</button></div>`;
+        body.innerHTML = `
+          ${renderArtifactSummary(artifact, action)}
+          <textarea id="desktop-edit-content" class="edit-preview" style="width:100%;min-height:220px;resize:vertical;">${escapeHTML(content || "")}</textarea>
+          <div>
+            <div class="panel-title" style="margin-bottom:8px;color:var(--fg);">Change preview</div>
+            <div id="desktop-action-diff" class="diff-preview">Preview changes to enable execution.</div>
+          </div>
+          <div class="backup-note">
+            <span class="check-icon">✓</span>
+            <span><b>Backup will be created before execution.</b><br>A timestamped backup is saved before the Wails bridge writes changes.</span>
+          </div>
+        `;
+        const footer = document.getElementById("desktop-action-footer");
+        if (footer) {
+          footer.innerHTML = `
+            <span style="color:var(--muted);font-size:11px;">Restore available after execution.</span>
+            <div style="display:flex;gap:8px;">
+              <button onclick="window.previewDesktopEdit('${id.replace(/'/g, "\\'")}')">Preview changes</button>
+              <button onclick="window.closeDesktopActionModal()">Cancel</button>
+              <button class="primary" id="desktop-edit-execute" disabled onclick="window.executeDesktopEdit('${id.replace(/'/g, "\\'")}')">Execute with backup</button>
+            </div>
+          `;
+        }
       }).catch(err => { body.innerHTML = '<div class="empty-state">Read failed: ' + escapeHTML(String(err)) + '</div>'; });
       return;
     }
@@ -1316,7 +2192,18 @@ button:disabled {
     }
     window.go.main.App.PreviewAction(JSON.stringify(payload)).then(json => {
       const preview = JSON.parse(json);
-      body.innerHTML = `<pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:420px;overflow:auto;">${escapeHTML(preview.diff || preview.message || "No changes")}</pre><div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="primary" onclick='window.executeDesktopAction(${JSON.stringify(JSON.stringify(payload))})'>Execute with backup</button></div>`;
+      body.innerHTML = `
+        ${renderArtifactSummary(artifact, action)}
+        <div>
+          <div class="panel-title" style="margin-bottom:8px;color:var(--fg);">Change preview</div>
+          <div class="diff-preview">${renderDiffHTML(preview.diff || preview.message || "No changes")}</div>
+        </div>
+        <div class="backup-note">
+          <span class="check-icon">✓</span>
+          <span><b>Backup will be created before execution.</b><br>Quietscope keeps the original artifact restorable after this action.</span>
+        </div>
+      `;
+      renderActionFooter(`window.executeDesktopAction(${JSON.stringify(JSON.stringify(payload))})`, "Execute with backup");
     }).catch(err => { body.innerHTML = '<div class="empty-state">Parser failed, manual review required: ' + escapeHTML(String(err)) + '</div>'; });
   };
 
@@ -1324,7 +2211,9 @@ button:disabled {
     const artifact = desktopArtifactById(id);
     const payload = { job_id: state.selectedId, action: "edit", path: artifact.path, artifact_id: artifact.id, content: document.getElementById("desktop-edit-content").value };
     window.go.main.App.PreviewAction(JSON.stringify(payload)).then(json => {
-      document.getElementById("desktop-action-diff").textContent = JSON.parse(json).diff || "";
+      document.getElementById("desktop-action-diff").innerHTML = renderDiffHTML(JSON.parse(json).diff || "No changes");
+      const executeButton = document.getElementById("desktop-edit-execute");
+      if (executeButton) executeButton.disabled = false;
     });
   };
 
@@ -1415,7 +2304,7 @@ button:disabled {
         styleClass += " system";
       }
       
-      return `<span class="${styleClass}">${text}</span>`;
+      return `<span class="${styleClass}">${escapeHTML(maskPrivatePaths(text))}</span>`;
     }).join("");
   }
 

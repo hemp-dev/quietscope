@@ -363,6 +363,28 @@ button.btn.danger:hover {
   background: var(--bad-glow);
 }
 
+button.btn.warning {
+  background: var(--panel);
+  color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+button.btn.warning:hover {
+  background: var(--warn-glow);
+}
+
+button.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+  box-shadow: none;
+}
+
+button.btn:disabled:hover {
+  background: var(--panel);
+  transform: none;
+}
+
 
 /* Dashboard summary and layout */
 section {
@@ -377,6 +399,130 @@ h2.section-title {
   letter-spacing: -0.5px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
+}
+
+.section-intro,
+.mode-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: -4px 0 24px;
+}
+
+.section-intro p,
+.mode-strip p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mode-pill,
+.privacy-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  background: rgba(16, 185, 129, 0.07);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.privacy-note {
+  margin-top: 10px;
+  display: none;
+}
+
+.privacy-note.visible {
+  display: inline-flex;
+}
+
+.dashboard-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.75fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.insight-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
+}
+
+.insight-panel h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+.insight-panel p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.mini-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mini-chip {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.next-step-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.next-step-list li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: #dbeafe;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.step-index {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--accent);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .dashboard-grid {
@@ -1048,6 +1194,237 @@ details.evidence-box pre {
   margin-bottom: 24px;
 }
 
+.action-row {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-note,
+.action-reason,
+.cleanup-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.action-note {
+  width: 100%;
+}
+
+.action-reason {
+  margin-top: 6px;
+}
+
+.local-server-badge,
+.static-report-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border: 1px solid currentColor;
+}
+
+.local-server-badge {
+  color: var(--accent);
+  background: rgba(16, 185, 129, 0.07);
+}
+
+.static-report-badge {
+  color: var(--muted);
+  background: rgba(100, 116, 139, 0.08);
+}
+
+.control-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-panel {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.mode-panel strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.mode-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mode-panel.active {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.mode-panel.backup-first {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.045);
+}
+
+.control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.control-actions .btn {
+  padding: 3px 7px;
+  font-size: 10px;
+  height: auto;
+  text-transform: lowercase;
+}
+
+.cleanup-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cleanup-card-footer {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.control-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.74);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.control-modal-panel {
+  width: min(960px, 96vw);
+  max-height: 88vh;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+
+.control-modal-header,
+.control-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.control-modal-header {
+  margin-bottom: 14px;
+}
+
+.control-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.35px;
+}
+
+.modal-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.modal-meta {
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.modal-meta span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.modal-meta b {
+  display: block;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.diff-preview,
+.edit-textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.diff-preview {
+  white-space: pre-wrap;
+  max-height: 330px;
+  overflow: auto;
+  margin: 0;
+}
+
+.edit-textarea {
+  min-height: 280px;
+  resize: vertical;
+}
+
+.backup-note {
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  background: rgba(59, 130, 246, 0.07);
+  color: #bfdbfe;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 12px 0;
+}
+
+.backup-note strong {
+  color: #e0f2fe;
+}
+
+.modal-preview-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+
 .noscript-box {
   background: var(--bad-glow);
   color: var(--bad);
@@ -1114,8 +1491,15 @@ details.evidence-box pre {
   }
   
   .dashboard-grid,
-  .simulator-section {
+  .simulator-section,
+  .dashboard-insight-grid,
+  .control-mode-grid {
     grid-template-columns: 1fr;
+  }
+
+  .section-intro,
+  .mode-strip {
+    flex-direction: column;
   }
 }
 </style>
@@ -1195,7 +1579,7 @@ details.evidence-box pre {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Copy Summary
         </button>
-        <button id="print" type="button" class="btn primary" title="Print document or compile to standalone offline PDF">
+        <button id="print" type="button" class="btn primary" title="Use the browser print dialog to save this self-contained offline report as PDF">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
           Save to PDF
         </button>
@@ -1205,6 +1589,13 @@ details.evidence-box pre {
     <!-- Dashboard Panel -->
     <section id="dashboard">
       <h2 class="section-title">Security Dashboard Summary</h2>
+      <div class="section-intro">
+        <div>
+          <p>Defensive user-space analysis summarized for offline review. The report stays self-contained and does not call external APIs, upload contents, or load trackers.</p>
+          <span id="privacy-note" class="privacy-note">Paths masked for safe sharing</span>
+        </div>
+        <span class="mode-pill">Self-contained offline report</span>
+      </div>
       
       <div class="dashboard-grid">
         <!-- Left Card Panel: SVG Gauge Card -->
@@ -1271,6 +1662,22 @@ details.evidence-box pre {
         </div>
       </div>
 
+      <div class="dashboard-insight-grid">
+        <div class="insight-panel">
+          <h3>Plain-language risk explanation</h3>
+          <p id="risk-explanation">Quietscope is calculating the overall posture from local findings, AI risk signals, cleanup candidates, and host metadata.</p>
+          <div class="mini-meta">
+            <span class="mini-chip">No uploads</span>
+            <span class="mini-chip">No trackers</span>
+            <span class="mini-chip">Masked copy supported</span>
+          </div>
+        </div>
+        <div class="insight-panel">
+          <h3>Top next steps</h3>
+          <ol id="top-next-steps" class="next-step-list"></ol>
+        </div>
+      </div>
+
       <!-- Secondary info panel / metadata boxes populated by renderSummary -->
       <div class="stats-grid" id="summary-stats-box">
         <!-- Dynamic contents will be inserted here -->
@@ -1301,6 +1708,10 @@ details.evidence-box pre {
     <!-- Security Findings Table Panel -->
     <section id="findings">
       <h2 class="section-title">Defensive Audit Findings</h2>
+      <div class="section-intro">
+        <p>Filter findings, expand evidence, and plan remediation from the report. File-changing buttons are shown as local-server actions only; static offline reports remain read-only.</p>
+        <span class="mode-pill">Evidence and guidance</span>
+      </div>
       
       <div class="filter-toolbar">
         <div class="filter-group">
@@ -1350,7 +1761,7 @@ details.evidence-box pre {
     <section id="ai-security">
       <h2 class="section-title">AI Local Security & Hardening</h2>
       <div class="highlight-box">
-        AI security checks audit the security stance of locally installed LLM/agent tools (e.g. Cursor, Ollama, Wails, local shell integrations, MCP clients) and highlight hardening opportunities.
+        Local LLM and MCP checks inspect defensive metadata only: installed tools, loopback bindings, prompt artifacts, and hardening recommendations. Discovery is separated from warnings so local AI tools are not treated as automatic threats.
       </div>
       <div id="ai-security-grid" class="section-cards"></div>
     </section>
@@ -1359,7 +1770,7 @@ details.evidence-box pre {
     <section id="ai-context">
       <h2 class="section-title">AI Skills & Context Inventory</h2>
       <div class="highlight-box">
-        Estimates the likelihood of local directories or files being auto-loaded by LLMs or developers into agent prompts. It highlights data boundaries rather than proving malice.
+        Maps auto-loaded LLM and developer context boundaries across local directories, rules, skills, prompts, and caches. Review high-impact contexts, writable instruction files, and cleanup status before copying anything into an agent session.
       </div>
       <div class="stats-grid" id="ai-context-summary-box" style="margin-bottom: 24px;"></div>
       
@@ -1457,7 +1868,7 @@ details.evidence-box pre {
     <section id="ai-catalog">
       <h2 class="section-title">AI Tool Catalog & MCP Providers</h2>
       <div class="highlight-box">
-        Identifies active, offline, and remote configurations, exposed local ports, environment variables, and MCP configurations. A catalog entry represents a discovery, not a threat vector.
+        Catalog entries represent local discovery, not a threat vector by themselves. Use this view to compare tools, providers, MCP servers, model caches, environment-key exposure, and local port posture.
       </div>
       
       <div class="stats-grid" id="ai-provider-summary-box" style="margin-bottom: 24px;"></div>
@@ -1603,6 +2014,20 @@ details.evidence-box pre {
       <div class="highlight-box">
         Manageable skills, guides, rules, prompts, MCP server entries, caches, and models are listed here. Static reports show the same actions disabled; local-server mode enables preview, diff, backup, and restore flows.
       </div>
+      <div class="control-mode-grid">
+        <div class="mode-panel" id="static-mode-panel">
+          <strong>Static report mode</strong>
+          <p>Read-only file review. Actions are visible for planning but disabled here, and no local files are changed.</p>
+        </div>
+        <div class="mode-panel" id="local-mode-panel">
+          <strong>Local-server mode</strong>
+          <p>When opened through the Quietscope local server, enabled actions start with preview, diff, backup, and restore-aware execution.</p>
+        </div>
+        <div class="mode-panel backup-first">
+          <strong>Backup first</strong>
+          <p>Changing skills, prompts, MCP entries, caches, or models should create a backup before execution and keep restore available afterward.</p>
+        </div>
+      </div>
       <div class="filter-toolbar">
         <div class="filter-group">
           <label for="control-tool">Tool</label>
@@ -1665,8 +2090,9 @@ details.evidence-box pre {
     <section id="cleanup">
       <h2 class="section-title">Storage & Reclaimable Caches</h2>
       <div class="highlight-box">
-        Identifies logs, temporary models, and redundant indexes safe for removal. Removing these directories will not impact system stability.
+        Storage cleanup is dry-run first. Quietscope identifies logs, temporary caches, redundant indexes, and model storage candidates, then separates safe cleanup from manual-review items before any local-server action is allowed.
       </div>
+      <div class="cleanup-summary-grid" id="cleanup-summary-box"></div>
       <div id="cleanup-section" class="section-cards"></div>
     </section>
   </main>
@@ -1682,8 +2108,11 @@ details.evidence-box pre {
   const raw = document.getElementById("audit-data").textContent;
   const data = JSON.parse(raw);
 
-  const isLocalServer = window.location.protocol === "http:" || window.location.protocol === "https:";
   const token = sessionStorage.getItem("quietscope_ui_token") || "";
+  function isLoopbackHost(hostname) {
+    return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1" || hostname === "[::1]";
+  }
+  const isLocalServer = (window.location.protocol === "http:" || window.location.protocol === "https:") && isLoopbackHost(window.location.hostname) && Boolean(token);
 
   function extractPathFromEvidence(evidence) {
     if (!evidence || !evidence.startsWith("path=")) return null;
@@ -1699,6 +2128,10 @@ details.evidence-box pre {
   }
 
   window.executeRemediation = async function(action, path, findingId) {
+    if (!isLocalServer) {
+      window.alert("Local-server token is required before file actions can run.");
+      return;
+    }
     if (!window.confirm("Are you sure you want to perform action '" + action + "' on path: " + path + "?")) return;
     try {
       const res = await fetch("/api/remediate", {
@@ -1804,12 +2237,55 @@ details.evidence-box pre {
     }
   }
 
+  function riskExplanation(s) {
+    const score = Number(s.overall_risk_score || 0);
+    const highCritical = Number(s.high_count || 0) + Number(s.critical_count || 0);
+    const aiRisks = Number(s.ai_risk_count || 0);
+    const secrets = Number(s.secrets_exposure_count || 0);
+    const cleanup = bytes(s.cleanup_reclaimable_bytes);
+    if (score > 70) {
+      return "High risk posture: prioritize critical and high findings before cleanup. Quietscope found " + highCritical + " high/critical issues, " + aiRisks + " AI-related risks, and " + secrets + " possible credential exposure signals.";
+    }
+    if (score > 35) {
+      return "Moderate risk posture: the host is usable, but several findings deserve review. Start with " + highCritical + " high/critical issues, then inspect AI hardening items and any reclaimable storage marked for manual review.";
+    }
+    return "Low risk posture: no urgent system-wide alarm from this local audit. Review " + aiRisks + " AI hardening items, confirm any secrets exposure count of " + secrets + ", and use dry-run cleanup notes before reclaiming " + cleanup + ".";
+  }
+
+  function topNextSteps(s) {
+    const steps = [];
+    const highCritical = Number(s.high_count || 0) + Number(s.critical_count || 0);
+    if (highCritical > 0) steps.push("Open Security Findings and expand high/critical rows for evidence and remediation guidance.");
+    if (Number(s.ai_risk_count || 0) > 0) steps.push("Review AI Security Hardening, Context Inventory, and Tool Catalog before launching agents in broad workspaces.");
+    if (Number(s.secrets_exposure_count || 0) > 0) steps.push("Check credential exposure findings and keep AI tools in sanitized shells when handling tokens.");
+    if (Number(s.cleanup_reclaimable_bytes || 0) > 0) steps.push("Use Storage & Cleanup as a dry-run plan first; preview cleanup locally before deleting caches.");
+    steps.push("Use Privacy Masking before sharing: copied summaries and visible paths should stay masked for safe review.");
+    return steps.slice(0, 4);
+  }
+
+  function renderDashboardGuidance(s) {
+    const explanation = $("risk-explanation");
+    if (explanation) explanation.textContent = riskExplanation(s);
+    const list = $("top-next-steps");
+    if (list) {
+      list.textContent = "";
+      topNextSteps(s).forEach((step, idx) => {
+        const item = document.createElement("li");
+        item.innerHTML = '<span class="step-index">' + (idx + 1) + '</span><span>' + escapeHTML(step) + '</span>';
+        list.appendChild(item);
+      });
+    }
+    const note = $("privacy-note");
+    if (note) note.classList.toggle("visible", Boolean($("privacy") && $("privacy").checked));
+  }
+
   // Populate dynamic summary cards
   function renderSummary() {
     const s = data.summary || {}, m = data.metadata || {}, sys = data.system_info || {};
     const box = $("summary-stats-box");
     if (!box) return;
     box.innerHTML = "";
+    renderDashboardGuidance(s);
 
     const addStatCard = (label, val, styleClass) => {
       const d = document.createElement("div");
@@ -1832,7 +2308,7 @@ details.evidence-box pre {
     const findingsVal = $("metric-findings-val");
     if (findingsVal) findingsVal.textContent = text(s.total_findings);
     const aiRisksVal = $("metric-ai-risks-val");
-    if (aiRisksVal) aiRisksVal.textContent = text((s.high_count || 0) + (s.critical_count || 0) + (s.secrets_exposure_count || 0));
+    if (aiRisksVal) aiRisksVal.textContent = text(s.ai_risk_count || 0);
     const reclaimableVal = $("metric-reclaimable-val");
     if (reclaimableVal) reclaimableVal.textContent = bytes(s.cleanup_reclaimable_bytes);
   }
@@ -1890,7 +2366,27 @@ details.evidence-box pre {
       const isChecked = state.resolvedFindings.has(f.id);
       const row = document.createElement("div");
       row.className = "checklist-row";
-      row.innerHTML = '\n        <input type="checkbox" ' + (isChecked ? "checked" : "") + ' onclick="event.stopPropagation(); toggleResolveFinding(\'' + f.id + '\')">\n        <div class="checklist-text" onclick="toggleResolveFinding(\'' + f.id + '\')">\n          <span class="checklist-title">' + masked(f.title) + '</span>\n          <span class="checklist-rec">Recommendation: ' + masked(f.recommendation || 'Verify manual remediation.') + '</span>\n        </div>\n        <span class="badge ' + f.severity + '">' + f.severity + '</span>\n      ';
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = isChecked;
+      input.addEventListener("click", event => {
+        event.stopPropagation();
+        toggleResolveFinding(f.id);
+      });
+      const textBox = document.createElement("div");
+      textBox.className = "checklist-text";
+      textBox.addEventListener("click", () => toggleResolveFinding(f.id));
+      const title = document.createElement("span");
+      title.className = "checklist-title";
+      title.textContent = masked(f.title);
+      const rec = document.createElement("span");
+      rec.className = "checklist-rec";
+      rec.textContent = "Recommendation: " + masked(f.recommendation || "Verify manual remediation.");
+      textBox.append(title, rec);
+      const badge = document.createElement("span");
+      badge.className = "badge " + safeClass(f.severity);
+      badge.textContent = text(f.severity);
+      row.append(input, textBox, badge);
       box.appendChild(row);
     });
   }
@@ -1908,6 +2404,10 @@ details.evidence-box pre {
       o.textContent = v; 
       el.appendChild(o);
     }); 
+  }
+
+  function safeClass(value) {
+    return text(value).replace(/[^a-zA-Z0-9_-]/g, "-");
   }
 
   fillSelect("severity", (data.findings || []).map(f => f.severity));
@@ -1969,17 +2469,26 @@ details.evidence-box pre {
       
       // Severity column
       let td = document.createElement("td");
-      td.innerHTML = '<span class="badge ' + f.severity + '">' + masked(f.severity) + '</span>';
+      let badge = document.createElement("span");
+      badge.className = "badge " + safeClass(f.severity);
+      badge.textContent = masked(f.severity);
+      td.appendChild(badge);
       tr.appendChild(td);
 
       // Status column
       td = document.createElement("td");
-      td.innerHTML = '<span class="badge ' + f.status + '">' + masked(f.status) + '</span>';
+      badge = document.createElement("span");
+      badge.className = "badge " + safeClass(f.status);
+      badge.textContent = masked(f.status);
+      td.appendChild(badge);
       tr.appendChild(td);
 
       // Category column
       td = document.createElement("td");
-      td.innerHTML = '<span class="badge info">' + masked(f.category) + '</span>';
+      badge = document.createElement("span");
+      badge.className = "badge info";
+      badge.textContent = masked(f.category);
+      td.appendChild(badge);
       tr.appendChild(td);
 
       // Title column
@@ -2009,24 +2518,63 @@ details.evidence-box pre {
       
       det.append(sum, pre); 
 
-      // Add remediation buttons if isLocalServer and path exists
+      // Frame remediation as a local-server-only workflow.
       const path = extractPathFromEvidence(f.evidence);
-      if (isLocalServer && path && !state.resolvedFindings.has(f.id)) {
+      if (path && !state.resolvedFindings.has(f.id)) {
         const actionDiv = document.createElement("div");
-        actionDiv.style.marginTop = "10px";
-        actionDiv.style.display = "flex";
-        actionDiv.style.gap = "8px";
+        actionDiv.className = "action-row";
         
         const isSkill = f.category === 'ai_security' || path.includes('.claude/skills') || path.includes('.hermes') || path.includes('.opencode') || path.includes('.cursorrules') || f.title.toLowerCase().includes('skill') || f.title.toLowerCase().includes('prompt');
         const hasSuspiciousPatterns = f.title.toLowerCase().includes('suspicious') || (f.evidence && f.evidence.includes('suspicious_patterns='));
         const disableText = path.endsWith('.disabled') ? 'Enable Skill' : 'Disable Skill';
-
-        actionDiv.innerHTML = '<button type="button" class="btn danger" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'delete\', \'' + path.replace(/'/g, "\\'") + '\', \'' + f.id + '\')">Delete File</button>';
-        if (isSkill) {
-          actionDiv.innerHTML += '<button type="button" class="btn warning" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'disable\', \'' + path.replace(/'/g, "\\'") + '\', \'' + f.id + '\')">' + disableText + '</button>';
-        }
-        if (hasSuspiciousPatterns) {
-          actionDiv.innerHTML += '<button type="button" class="btn primary" style="padding: 4px 8px; font-size: 11px; height: auto;" onclick="window.executeRemediation(\'fix\', \'' + path.replace(/'/g, "\\'") + '\', \'' + f.id + '\')">Fix Patterns</button>';
+        if (isLocalServer) {
+          const modeBadge = document.createElement("span");
+          modeBadge.className = "local-server-badge";
+          modeBadge.textContent = "Local-server action";
+          const note = document.createElement("span");
+          note.className = "action-note";
+          note.textContent = "Preview the target path and confirm locally before execution. The report file itself does not change files.";
+          actionDiv.append(modeBadge, note);
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "btn danger";
+          deleteButton.textContent = "Delete File";
+          deleteButton.addEventListener("click", () => window.executeRemediation("delete", path, f.id));
+          actionDiv.appendChild(deleteButton);
+          if (isSkill) {
+            const disableButton = document.createElement("button");
+            disableButton.type = "button";
+            disableButton.className = "btn warning";
+            disableButton.textContent = disableText;
+            disableButton.addEventListener("click", () => window.executeRemediation("disable", path, f.id));
+            actionDiv.appendChild(disableButton);
+          } else {
+            const disabledButton = document.createElement("button");
+            disabledButton.type = "button";
+            disabledButton.className = "btn warning";
+            disabledButton.disabled = true;
+            disabledButton.title = "Not classified as a manageable skill or prompt artifact";
+            disabledButton.textContent = "Disable Skill";
+            actionDiv.appendChild(disabledButton);
+          }
+          if (hasSuspiciousPatterns) {
+            const fixButton = document.createElement("button");
+            fixButton.type = "button";
+            fixButton.className = "btn primary";
+            fixButton.textContent = "Fix Patterns";
+            fixButton.addEventListener("click", () => window.executeRemediation("fix", path, f.id));
+            actionDiv.appendChild(fixButton);
+          } else {
+            const fixDisabled = document.createElement("button");
+            fixDisabled.type = "button";
+            fixDisabled.className = "btn primary";
+            fixDisabled.disabled = true;
+            fixDisabled.title = "No suspicious pattern metadata on this finding";
+            fixDisabled.textContent = "Fix Patterns";
+            actionDiv.appendChild(fixDisabled);
+          }
+        } else {
+          actionDiv.innerHTML = '<span class="static-report-badge">Static report</span><span class="action-note">Local-server actions are disabled in this offline file. Open the report through Quietscope local server to preview, confirm, and execute.</span><button type="button" class="btn danger" disabled>Delete File</button><button type="button" class="btn warning" disabled>Disable Skill</button><button type="button" class="btn primary" disabled>Fix Patterns</button>';
         }
         det.appendChild(actionDiv);
       }
@@ -2170,7 +2718,7 @@ details.evidence-box pre {
           masked(d.recommendation)
         ].forEach(v => {
           const td = document.createElement("td"); 
-          td.textContent = text(v); 
+          td.textContent = text(v);
           tr.appendChild(td);
         });
         dirBody.appendChild(tr);
@@ -2644,11 +3192,19 @@ details.evidence-box pre {
   
   $("copy").addEventListener("click", () => { 
     const s = data.summary || {}; 
-    const summary = "quietscope " + text((data.metadata || {}).version) + 
+    const summary = "quietscope " + text((data.metadata || {}).version) +
                     ": risk " + text(s.overall_risk_score) + "/100 (" + text(s.risk_level) + 
-                    "), findings " + text(s.total_findings) + ", cleanup " + bytes(s.cleanup_reclaimable_bytes); 
+                    "), findings " + text(s.total_findings) + ", ai_risks " + text(s.ai_risk_count || 0) +
+                    ", secrets " + text(s.secrets_exposure_count || 0) + ", cleanup " + bytes(s.cleanup_reclaimable_bytes) +
+                    ". Local-only report; privacy masking " + (($("privacy") && $("privacy").checked) ? "enabled" : "available") + ".";
     if (navigator.clipboard) { 
-      navigator.clipboard.writeText(summary).catch(() => window.prompt("Copy clean audit summary block:", summary)); 
+      navigator.clipboard.writeText(summary).then(() => {
+        const btn = $("copy");
+        if (!btn) return;
+        const old = btn.innerHTML;
+        btn.innerHTML = "Copied masked-safe summary";
+        window.setTimeout(() => { btn.innerHTML = old; }, 1400);
+      }).catch(() => window.prompt("Copy clean audit summary block:", summary));
     } else { 
       window.prompt("Copy clean audit summary block:", summary); 
     } 
@@ -2665,15 +3221,12 @@ details.evidence-box pre {
     const deleteBtn = document.getElementById("delete-report");
     if (!deleteBtn) return;
 
-    // Check if we are served from local server over http/https
-    const isLocalServer = window.location.protocol === "http:" || window.location.protocol === "https:";
     if (!isLocalServer) return;
 
     const match = window.location.pathname.match(/\/reports\/([^\/]+)\//);
     if (!match) return;
 
     const jobId = match[1];
-    const token = sessionStorage.getItem("quietscope_ui_token");
     if (!token) return;
 
     // Show delete button

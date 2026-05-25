@@ -340,6 +340,10 @@ func (s *auditUIServer) handleAction(w http.ResponseWriter, r *http.Request, exe
 		http.Error(w, "invalid action request", http.StatusBadRequest)
 		return
 	}
+	if err := s.validateArtifactAction(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	home, projectRoot := s.managementContext(req.JobID)
 	actionReq := safety.ActionRequest{
 		Action:       req.Action,
@@ -367,6 +371,57 @@ func (s *auditUIServer) handleAction(w http.ResponseWriter, r *http.Request, exe
 		return
 	}
 	writeJSONResponse(w, http.StatusOK, result)
+}
+
+func (s *auditUIServer) validateArtifactAction(req artifactActionAPIRequest) error {
+	action := req.Action
+	if action == "" && req.BackupPath != "" {
+		action = string(safety.ActionRestore)
+	}
+	if action == "" {
+		return errors.New("action is required")
+	}
+	_, report := s.managementReport(req.JobID)
+	artifacts := audit.DedupeManageableArtifacts(report.ManageableArtifacts)
+	if len(artifacts) == 0 {
+		return nil
+	}
+	var artifact *audit.ManageableArtifact
+	for i := range artifacts {
+		candidate := &artifacts[i]
+		if req.ArtifactID != "" {
+			if candidate.ID == req.ArtifactID {
+				artifact = candidate
+				break
+			}
+			continue
+		}
+		if candidate.Path == req.Path {
+			artifact = candidate
+			break
+		}
+	}
+	if artifact == nil {
+		return errors.New("artifact action is not listed in the selected audit report")
+	}
+	if req.Path != "" && artifact.Path != req.Path {
+		return errors.New("artifact path does not match the selected audit report")
+	}
+	if len(artifact.SafeActions) == 0 {
+		return nil
+	}
+	for _, availability := range artifact.SafeActions {
+		if string(availability.Action) == action {
+			if !availability.Available {
+				if availability.DisabledReason != "" {
+					return fmt.Errorf("artifact action unavailable: %s", availability.DisabledReason)
+				}
+				return errors.New("artifact action unavailable")
+			}
+			return nil
+		}
+	}
+	return errors.New("artifact action is not allowed for this artifact")
 }
 
 func (s *auditUIServer) handleRemediate(w http.ResponseWriter, r *http.Request) {

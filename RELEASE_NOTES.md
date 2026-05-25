@@ -15,6 +15,7 @@ AI Control Center release: manageable local AI artifacts are now visible across 
 
 ### Changed
 
+- Refreshed the Wails desktop, local web controller, and standalone HTML report surfaces with the new Quietscope dark security-dashboard system, clearer audit phases, and backup-first action previews.
 - Static HTML reports now show action buttons disabled with honest reasons instead of implying offline mutation support.
 - Cache/log cleanup and model storage are split: allowlisted caches can be cleaned with backup; model directories are manual-only by default.
 - Gemini, Google Antigravity, `.agents`, `.gemini`, Hermes, OpenCode, and additional MCP path coverage are included in management metadata.
@@ -22,6 +23,7 @@ AI Control Center release: manageable local AI artifacts are now visible across 
 
 ### Security
 
+- Local-server report actions now require loopback hosting plus a session token, and action API requests are validated against the selected report artifact/action availability metadata.
 - Write/delete/disable/fix/restore actions require allowlist checks, symlink blocking, and a backup before mutation.
 - Secret paths, Keychain data, `.env` files, SSH/private keys, and cloud credential roots remain blocked from read/edit workflows.
 - MCP commands/scripts/hooks are never executed; config mutation is parser-based rather than string replacement.

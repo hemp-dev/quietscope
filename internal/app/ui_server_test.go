@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,26 @@ import (
 
 	"github.com/hemp-dev/quietscope/internal/audit"
 )
+
+func TestHandleIndexRendersControlDashboard(t *testing.T) {
+	server := &auditUIServer{
+		base:  Config{Version: "test"},
+		token: "test-token",
+		ctx:   context.Background(),
+		jobs:  map[string]*auditUIJob{},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	server.handleIndex(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected OK status, got %v: %s", w.Code, w.Body.String())
+	}
+	for _, needle := range []string{"Local Web Controller", "AI Control Center", "quietscope_ui_token"} {
+		if !bytes.Contains(w.Body.Bytes(), []byte(needle)) {
+			t.Fatalf("expected dashboard HTML to contain %q", needle)
+		}
+	}
+}
 
 func TestHandleAuditDeleteAndCancel(t *testing.T) {
 	tempDir := t.TempDir()
@@ -121,6 +142,17 @@ func TestManagementAPIArtifactsPreviewExecuteRestore(t *testing.T) {
 			Kind:  "instruction",
 			Scope: "project",
 			Risk:  "high",
+			SafeActions: []audit.ActionAvailability{{
+				Action:          audit.ArtifactActionEdit,
+				Available:       true,
+				RequiresPreview: true,
+				RequiresBackup:  true,
+			}, {
+				Action:          audit.ArtifactActionRestore,
+				Available:       true,
+				RequiresPreview: true,
+				RequiresBackup:  true,
+			}},
 		}}},
 	}
 
@@ -179,5 +211,15 @@ func TestManagementAPIArtifactsPreviewExecuteRestore(t *testing.T) {
 	}
 	if got, _ := os.ReadFile(artifactPath); string(got) != "old\n" {
 		t.Fatalf("expected restored content, got %q", got)
+	}
+
+	blockedPayload := map[string]any{"job_id": "job1", "action": "delete", "path": artifactPath, "artifact_id": "agent-md"}
+	blockedBody, _ := json.Marshal(blockedPayload)
+	reqBlocked := httptest.NewRequest(http.MethodPost, "/api/actions/execute", bytes.NewReader(blockedBody))
+	reqBlocked.Header.Set("X-Audit-Token", "test-token")
+	wBlocked := httptest.NewRecorder()
+	server.handleActionExecute(wBlocked, reqBlocked)
+	if wBlocked.Code != http.StatusBadRequest {
+		t.Fatalf("expected blocked action to be rejected, got %d: %s", wBlocked.Code, wBlocked.Body.String())
 	}
 }
