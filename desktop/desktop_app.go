@@ -105,7 +105,7 @@ func (a *App) StartAudit(cfgJson string) (string, error) {
 	jobID := now.UTC().Format("20060102-150405") + "-" + randomHex(4)
 
 	cfg := app.Config{
-		Version:       "v0.6.0",
+		Version:       "v0.6.1",
 		StartedAt:     now,
 		WantText:      input.WantText,
 		WantJSON:      true, // Always generate JSON internally for the desktop viewer

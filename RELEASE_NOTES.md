@@ -1,5 +1,22 @@
 # Release Notes
 
+## v0.6.1
+
+UI/UX redesign release: refreshed the Wails desktop, local web controller, and standalone HTML report surfaces using the new Quietscope security-dashboard system from the redesign references.
+
+### Changed
+
+- Refreshed the Wails desktop start, running, completed, findings, AI Control Center, and backup-first preview flows.
+- Refreshed the local web controller with a darker loopback dashboard, clearer audit phases, locked running controls, and safer preview/edit modal language.
+- Refreshed the standalone HTML report dashboard, findings, AI hardening, AI inventory/catalog, control center, cleanup, and privacy masking surfaces.
+- Version bumped to `v0.6.1`.
+
+### Security
+
+- Local-server report actions now require loopback hosting plus a session token.
+- Action API requests are validated against the selected report artifact and action availability metadata, so disabled UI actions are also blocked server-side.
+- Report and desktop log rendering received additional escaping around user-controlled audit values.
+
 ## v0.6.0
 
 AI Control Center release: manageable local AI artifacts are now visible across JSON, HTML, local web, and desktop surfaces with preview/diff/backup-first actions.
@@ -15,7 +32,6 @@ AI Control Center release: manageable local AI artifacts are now visible across 
 
 ### Changed
 
-- Refreshed the Wails desktop, local web controller, and standalone HTML report surfaces with the new Quietscope dark security-dashboard system, clearer audit phases, and backup-first action previews.
 - Static HTML reports now show action buttons disabled with honest reasons instead of implying offline mutation support.
 - Cache/log cleanup and model storage are split: allowlisted caches can be cleaned with backup; model directories are manual-only by default.
 - Gemini, Google Antigravity, `.agents`, `.gemini`, Hermes, OpenCode, and additional MCP path coverage are included in management metadata.
@@ -23,7 +39,6 @@ AI Control Center release: manageable local AI artifacts are now visible across 
 
 ### Security
 
-- Local-server report actions now require loopback hosting plus a session token, and action API requests are validated against the selected report artifact/action availability metadata.
 - Write/delete/disable/fix/restore actions require allowlist checks, symlink blocking, and a backup before mutation.
 - Secret paths, Keychain data, `.env` files, SSH/private keys, and cloud credential roots remain blocked from read/edit workflows.
 - MCP commands/scripts/hooks are never executed; config mutation is parser-based rather than string replacement.
