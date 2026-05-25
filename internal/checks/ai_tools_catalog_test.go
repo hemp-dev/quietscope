@@ -63,8 +63,8 @@ func TestOpenCodePathDetection(t *testing.T) {
 	}
 }
 
-func TestChineseProviderDefinitionsIncludeFamilies(t *testing.T) {
-	defs := ChineseProviderDefinitions("/Users/alice")
+func TestAdditionalProviderDefinitionsIncludeFamilies(t *testing.T) {
+	defs := AdditionalProviderDefinitions("/Users/alice")
 	foundDeepSeek := false
 	foundQwenEnv := false
 	for _, def := range defs {
@@ -88,9 +88,9 @@ func TestProviderEnvKeyMasking(t *testing.T) {
 	}
 }
 
-func TestProviderOriginAloneIsNotRisk(t *testing.T) {
+func TestProviderPresenceAloneIsNotRisk(t *testing.T) {
 	if got := ClassifyProviderUsageRisk(true, false, false, false, false); got != "info" {
-		t.Fatalf("origin alone should be info, got %s", got)
+		t.Fatalf("provider presence alone should be info, got %s", got)
 	}
 }
 

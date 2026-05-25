@@ -1476,11 +1476,9 @@ details.evidence-box pre {
           <select id="provider-family"><option value="">All Families</option></select>
         </div>
         <div class="filter-group">
-          <label for="china-origin">China-origin Vendor</label>
-          <select id="china-origin">
-            <option value="">All</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
+          <label for="provider-group">Provider Group</label>
+          <select id="provider-group">
+            <option value="">All Groups</option>
           </select>
         </div>
         <div class="filter-group">
@@ -1556,7 +1554,7 @@ details.evidence-box pre {
         </table>
       </div>
 
-      <h3 style="font-size: 15px; font-weight: 700; margin-top: 32px; margin-bottom: 12px;">Chinese AI SDKs & Providers</h3>
+      <h3 style="font-size: 15px; font-weight: 700; margin-top: 32px; margin-bottom: 12px;">Additional AI SDKs & Providers</h3>
       <div class="table-container">
         <table class="responsive-table">
           <thead>
@@ -1572,7 +1570,7 @@ details.evidence-box pre {
               <th>Recommendation</th>
             </tr>
           </thead>
-          <tbody id="chinese-provider-body"></tbody>
+          <tbody id="additional-provider-body"></tbody>
         </table>
       </div>
 
@@ -1922,8 +1920,9 @@ details.evidence-box pre {
   fillSelect("ai-impact", (data.ai_context_inventory || []).map(a => a.context_impact).concat((data.ai_related_directories || []).map(d => d.context_impact)));
   fillSelect("ai-auto", (data.ai_context_inventory || []).map(a => a.auto_loaded_likelihood));
   fillSelect("catalog-category", (data.ai_tool_catalog || []).flatMap(t => t.categories || []));
-  fillSelect("catalog-vendor", (data.ai_tool_catalog || []).map(t => t.vendor).concat((data.chinese_ai_providers || []).map(p => p.vendor)));
-  fillSelect("provider-family", (data.chinese_ai_providers || []).flatMap(p => p.families || []));
+  fillSelect("catalog-vendor", (data.ai_tool_catalog || []).map(t => t.vendor).concat((data.additional_ai_providers || []).map(p => p.vendor)));
+  fillSelect("provider-family", (data.additional_ai_providers || []).flatMap(p => p.families || []));
+  fillSelect("provider-group", (data.additional_ai_providers || []).map(p => p.provider_group));
   fillSelect("control-tool", (data.manageable_artifacts || []).map(a => a.tool));
   fillSelect("control-kind", (data.manageable_artifacts || []).map(a => a.kind));
   fillSelect("control-scope", (data.manageable_artifacts || []).map(a => a.scope));
@@ -2223,7 +2222,7 @@ details.evidence-box pre {
     addCatalogCard("Configured MCP Servers", text(s.total_mcp_servers_detected));
     addCatalogCard("Hermes Agent status", s.hermes_detected ? "Configured" : "Not Found", s.hermes_detected ? "warn" : "low");
     addCatalogCard("OpenCode Workspace status", s.opencode_detected ? "Configured" : "Not Found", s.opencode_detected ? "warn" : "low");
-    addCatalogCard("China-origin AI SDK Libraries", text(s.chinese_providers_detected), s.chinese_providers_detected ? "warn" : "low");
+    addCatalogCard("Additional AI SDK Libraries", text(s.additional_providers_detected), s.additional_providers_detected ? "warn" : "low");
     addCatalogCard("Discovered Environment API keys", text(s.remote_provider_env_keys_detected), s.remote_provider_env_keys_detected ? "warn" : "low");
     addCatalogCard("Local LLM model Cache size", bytes(s.local_model_cache_size_bytes));
     addCatalogCard("Broad local host API servers", text(s.non_loopback_ai_servers), s.non_loopback_ai_servers ? "bad" : "low");
@@ -2323,17 +2322,17 @@ details.evidence-box pre {
       });
     }
 
-    const family = $("provider-family").value; 
-    const china = $("china-origin").value; 
+    const family = $("provider-family").value;
+    const providerGroup = $("provider-group").value;
     const hasEnv = $("provider-env").value;
-    
-    const providerBody = $("chinese-provider-body"); 
+
+    const providerBody = $("additional-provider-body");
     if(providerBody) {
       providerBody.textContent = "";
-      (data.chinese_ai_providers || []).filter(p => {
+      (data.additional_ai_providers || []).filter(p => {
         if (vendor && p.vendor !== vendor) return false;
         if (family && !(p.families || []).includes(family)) return false;
-        if (china && String(p.country_or_region === "China") !== china) return false;
+        if (providerGroup && p.provider_group !== providerGroup) return false;
         if (hasEnv && String(Boolean((p.env_keys_detected || []).length)) !== hasEnv) return false;
         return true;
       }).forEach(p => {
@@ -2606,10 +2605,10 @@ details.evidence-box pre {
 
   // Event bindings
   const inputIds = [
-    "search", "severity", "category", "status", "special", "privacy", 
-    "ai-tool", "ai-dir-category", "ai-artifact-type", "ai-scope", 
-    "ai-impact", "ai-auto", "ai-cleanup", "ai-suspicious", "ai-size-min", 
-    "catalog-category", "catalog-vendor", "provider-family", "china-origin", 
+    "search", "severity", "category", "status", "special", "privacy",
+    "ai-tool", "ai-dir-category", "ai-artifact-type", "ai-scope",
+    "ai-impact", "ai-auto", "ai-cleanup", "ai-suspicious", "ai-size-min",
+    "catalog-category", "catalog-vendor", "provider-family", "provider-group",
     "provider-env", "catalog-mcp", "catalog-size-min",
     "control-tool", "control-kind", "control-scope", "control-risk", "control-action"
   ];

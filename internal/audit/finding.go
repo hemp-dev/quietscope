@@ -270,10 +270,10 @@ type OpenCodeInfo struct {
 	Recommendations []string `json:"recommendations"`
 }
 
-type ChineseAIProviderInfo struct {
+type AdditionalAIProviderInfo struct {
 	ID                  string   `json:"id"`
 	DisplayName         string   `json:"display_name"`
-	CountryOrRegion     string   `json:"country_or_region"`
+	ProviderGroup       string   `json:"provider_group"`
 	Vendor              string   `json:"vendor"`
 	Families            []string `json:"families"`
 	Detected            bool     `json:"detected"`
@@ -316,7 +316,7 @@ type AIProviderSummary struct {
 	TotalMCPServersDetected       int   `json:"total_mcp_servers_detected"`
 	HermesDetected                bool  `json:"hermes_detected"`
 	OpenCodeDetected              bool  `json:"opencode_detected"`
-	ChineseProvidersDetected      int   `json:"chinese_providers_detected"`
+	AdditionalProvidersDetected   int   `json:"additional_providers_detected"`
 	RemoteProviderEnvKeysDetected int   `json:"remote_provider_env_keys_detected"`
 	LocalModelCacheSizeBytes      int64 `json:"local_model_cache_size_bytes"`
 	NonLoopbackAIServers          int   `json:"non_loopback_ai_servers"`
@@ -337,48 +337,48 @@ type Metadata struct {
 }
 
 type Report struct {
-	Metadata             Metadata                    `json:"metadata"`
-	SystemInfo           map[string]string           `json:"system_info"`
-	Summary              Summary                     `json:"summary"`
-	Findings             []Finding                   `json:"findings"`
-	CleanupCandidates    []CleanupCandidate          `json:"cleanup_candidates"`
-	ManageableArtifacts  []ManageableArtifact        `json:"manageable_artifacts"`
-	AISecurity           AISecuritySummary           `json:"ai_security"`
-	AIContextInventory   []AIContextArtifact         `json:"ai_context_inventory"`
-	AIRelatedDirectories []AIRelatedDirectory        `json:"ai_related_directories"`
-	AISkills             []AIContextArtifact         `json:"ai_skills"`
-	AIContextSummary     AIContextSummary            `json:"ai_context_summary"`
-	AIToolCatalog        []AIToolCatalogItem         `json:"ai_tool_catalog"`
-	MCPClients           []MCPClientCatalogItem      `json:"mcp_clients"`
-	MCPServers           []MCPServerCatalogItem      `json:"mcp_servers"`
-	HermesAgent          HermesAgentInfo             `json:"hermes_agent"`
-	OpenCode             OpenCodeInfo                `json:"opencode"`
-	ChineseAIProviders   []ChineseAIProviderInfo     `json:"chinese_ai_providers"`
-	LocalModelInventory  []LocalModelInventoryItem   `json:"local_model_inventory"`
-	AISecurityTools      []AISecurityToolCatalogItem `json:"ai_security_tools"`
-	AIProviderSummary    AIProviderSummary           `json:"ai_provider_summary"`
-	GeneratedAt          time.Time                   `json:"generated_at"`
+	Metadata              Metadata                    `json:"metadata"`
+	SystemInfo            map[string]string           `json:"system_info"`
+	Summary               Summary                     `json:"summary"`
+	Findings              []Finding                   `json:"findings"`
+	CleanupCandidates     []CleanupCandidate          `json:"cleanup_candidates"`
+	ManageableArtifacts   []ManageableArtifact        `json:"manageable_artifacts"`
+	AISecurity            AISecuritySummary           `json:"ai_security"`
+	AIContextInventory    []AIContextArtifact         `json:"ai_context_inventory"`
+	AIRelatedDirectories  []AIRelatedDirectory        `json:"ai_related_directories"`
+	AISkills              []AIContextArtifact         `json:"ai_skills"`
+	AIContextSummary      AIContextSummary            `json:"ai_context_summary"`
+	AIToolCatalog         []AIToolCatalogItem         `json:"ai_tool_catalog"`
+	MCPClients            []MCPClientCatalogItem      `json:"mcp_clients"`
+	MCPServers            []MCPServerCatalogItem      `json:"mcp_servers"`
+	HermesAgent           HermesAgentInfo             `json:"hermes_agent"`
+	OpenCode              OpenCodeInfo                `json:"opencode"`
+	AdditionalAIProviders []AdditionalAIProviderInfo  `json:"additional_ai_providers"`
+	LocalModelInventory   []LocalModelInventoryItem   `json:"local_model_inventory"`
+	AISecurityTools       []AISecurityToolCatalogItem `json:"ai_security_tools"`
+	AIProviderSummary     AIProviderSummary           `json:"ai_provider_summary"`
+	GeneratedAt           time.Time                   `json:"generated_at"`
 }
 
 type CheckResult struct {
-	SystemInfo           map[string]string
-	Findings             []Finding
-	CleanupCandidates    []CleanupCandidate
-	ManageableArtifacts  []ManageableArtifact
-	AISecurity           AISecuritySummary
-	AIContextInventory   []AIContextArtifact
-	AIRelatedDirectories []AIRelatedDirectory
-	AISkills             []AIContextArtifact
-	AIContextSummary     AIContextSummary
-	AIToolCatalog        []AIToolCatalogItem
-	MCPClients           []MCPClientCatalogItem
-	MCPServers           []MCPServerCatalogItem
-	HermesAgent          HermesAgentInfo
-	OpenCode             OpenCodeInfo
-	ChineseAIProviders   []ChineseAIProviderInfo
-	LocalModelInventory  []LocalModelInventoryItem
-	AISecurityTools      []AISecurityToolCatalogItem
-	AIProviderSummary    AIProviderSummary
+	SystemInfo            map[string]string
+	Findings              []Finding
+	CleanupCandidates     []CleanupCandidate
+	ManageableArtifacts   []ManageableArtifact
+	AISecurity            AISecuritySummary
+	AIContextInventory    []AIContextArtifact
+	AIRelatedDirectories  []AIRelatedDirectory
+	AISkills              []AIContextArtifact
+	AIContextSummary      AIContextSummary
+	AIToolCatalog         []AIToolCatalogItem
+	MCPClients            []MCPClientCatalogItem
+	MCPServers            []MCPServerCatalogItem
+	HermesAgent           HermesAgentInfo
+	OpenCode              OpenCodeInfo
+	AdditionalAIProviders []AdditionalAIProviderInfo
+	LocalModelInventory   []LocalModelInventoryItem
+	AISecurityTools       []AISecurityToolCatalogItem
+	AIProviderSummary     AIProviderSummary
 }
 
 func (r *CheckResult) Merge(next CheckResult) {
@@ -415,7 +415,7 @@ func (r *CheckResult) Merge(next CheckResult) {
 	if next.OpenCode.Detected || len(next.OpenCode.ConfigPaths) > 0 {
 		r.OpenCode = next.OpenCode
 	}
-	r.ChineseAIProviders = append(r.ChineseAIProviders, next.ChineseAIProviders...)
+	r.AdditionalAIProviders = append(r.AdditionalAIProviders, next.AdditionalAIProviders...)
 	r.LocalModelInventory = append(r.LocalModelInventory, next.LocalModelInventory...)
 	r.AISecurityTools = append(r.AISecurityTools, next.AISecurityTools...)
 	r.AIProviderSummary.TotalAIToolsDetected += next.AIProviderSummary.TotalAIToolsDetected
@@ -423,7 +423,7 @@ func (r *CheckResult) Merge(next CheckResult) {
 	r.AIProviderSummary.TotalMCPServersDetected += next.AIProviderSummary.TotalMCPServersDetected
 	r.AIProviderSummary.HermesDetected = r.AIProviderSummary.HermesDetected || next.AIProviderSummary.HermesDetected
 	r.AIProviderSummary.OpenCodeDetected = r.AIProviderSummary.OpenCodeDetected || next.AIProviderSummary.OpenCodeDetected
-	r.AIProviderSummary.ChineseProvidersDetected += next.AIProviderSummary.ChineseProvidersDetected
+	r.AIProviderSummary.AdditionalProvidersDetected += next.AIProviderSummary.AdditionalProvidersDetected
 	r.AIProviderSummary.RemoteProviderEnvKeysDetected += next.AIProviderSummary.RemoteProviderEnvKeysDetected
 	r.AIProviderSummary.LocalModelCacheSizeBytes += next.AIProviderSummary.LocalModelCacheSizeBytes
 	r.AIProviderSummary.NonLoopbackAIServers += next.AIProviderSummary.NonLoopbackAIServers

@@ -179,7 +179,7 @@ Initial open-source-ready release.
 - AI Skills & Context Inventory for Claude, Codex, Cursor, Copilot, VS Code, Continue, Cline, Roo, Windsurf, Aider, Open Interpreter, and generic AI-agent artifacts.
 - AI-related directory disk usage inventory with context impact scoring and manual-review recommendations for model directories.
 - Extended AI Tool Catalog covering AI IDEs, coding agents, CLI agents, MCP clients/servers, local LLM runtimes, desktop wrappers, AI security scanners, Hermes Agent, OpenCode/opencode, and hosted/cloud agent local artifacts.
-- Chinese AI Models & Providers inventory for Qwen, DeepSeek, Kimi/Moonshot, GLM/Z.ai/Zhipu, MiniMax, Doubao/ByteDance, ERNIE/Baidu, Baichuan, Yi/01.AI, InternLM, Hunyuan/Tencent, StepFun, SenseNova, and related local caches/provider configs.
+- Additional AI Models & Providers inventory for Qwen, DeepSeek, Kimi/Moonshot, GLM/Z.ai/Zhipu, MiniMax, Doubao/ByteDance, ERNIE/Baidu, Baichuan, Yi/01.AI, InternLM, Hunyuan/Tencent, StepFun, SenseNova, and related local caches/provider configs.
 - TXT and JSON reports by default.
 - Optional self-contained HTML UI with dashboard, filters, privacy mode, AI section, cleanup section, print, and copy-summary.
 - Safe cleanup dry-run and exact confirmation phrase enforcement.

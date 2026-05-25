@@ -35,7 +35,7 @@ type AIToolDefinition struct {
 type AIModelProviderDefinition struct {
 	ID              string
 	DisplayName     string
-	CountryOrRegion string
+	ProviderGroup   string
 	Vendor          string
 	Families        []string
 	APIEnvKeys      []string
@@ -63,7 +63,7 @@ func RunAIToolsCatalog(ctx context.Context, cfg audit.RuntimeConfig, runner *pla
 	servers := detectMCPServers(cfg)
 	hermes := detectHermesAgent(cfg)
 	opencode := detectOpenCode(cfg)
-	providers := detectChineseAIProviders(cfg)
+	providers := detectAdditionalAIProviders(cfg)
 	models := detectLocalModelInventory(cfg, providers)
 	securityTools := detectAISecurityTools(cfg)
 	findings := aiToolCatalogFindings(tools, clients, servers, hermes, opencode, providers, models, securityTools)
@@ -71,17 +71,17 @@ func RunAIToolsCatalog(ctx context.Context, cfg audit.RuntimeConfig, runner *pla
 	manageable := manageableForMCPServers(servers, cfg)
 	manageable = append(manageable, manageableForLocalModels(models, cfg)...)
 	return audit.CheckResult{
-		Findings:            findings,
-		ManageableArtifacts: manageable,
-		AIToolCatalog:       tools,
-		MCPClients:          clients,
-		MCPServers:          servers,
-		HermesAgent:         hermes,
-		OpenCode:            opencode,
-		ChineseAIProviders:  providers,
-		LocalModelInventory: models,
-		AISecurityTools:     securityTools,
-		AIProviderSummary:   summary,
+		Findings:              findings,
+		ManageableArtifacts:   manageable,
+		AIToolCatalog:         tools,
+		MCPClients:            clients,
+		MCPServers:            servers,
+		HermesAgent:           hermes,
+		OpenCode:              opencode,
+		AdditionalAIProviders: providers,
+		LocalModelInventory:   models,
+		AISecurityTools:       securityTools,
+		AIProviderSummary:     summary,
 	}, nil
 }
 
@@ -136,32 +136,32 @@ func AIToolDefinitions(home string) []AIToolDefinition {
 		{ID: "poe-desktop", DisplayName: "Poe Desktop", Vendor: "Quora", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Poe.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Poe")}, RiskNotes: []string{"Only local app metadata is audited."}},
 		{ID: "typingmind", DisplayName: "TypingMind", Vendor: "TypingMind", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("TypingMind.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "TypingMind")}, RiskNotes: []string{"Browser-wrapper AI app metadata is audited without reading conversations."}},
 		{ID: "lovable-v0-bolt-artifacts", DisplayName: "Lovable / v0 / Bolt workflow artifacts", Vendor: "Various", Categories: []string{"cloud_agent_cli", "ai_workflow_agent"}, ProjectMarkers: []string{"lovable.json", ".lovable", "v0.json", ".v0", "bolt.json", ".bolt"}, RiskNotes: []string{"Project workflow artifacts can guide hosted agents; review before sharing sensitive context."}},
-		{ID: "qwen-code", DisplayName: "Qwen Code / Qwen CLI", Vendor: "Alibaba", Categories: []string{"ai_cli_agent", "ai_coding_agent", "cloud_agent_cli"}, BinaryNames: []string{"qwen", "qwen-code", "qwen-cli"}, ConfigPaths: []string{filepath.Join(home, ".qwen"), filepath.Join(home, ".qwen-code"), filepath.Join(home, ".dashscope")}, CachePaths: []string{filepath.Join(home, ".modelscope"), filepath.Join(home, ".cache", "modelscope")}, RiskNotes: []string{"Provider origin is neutral; risk depends on remote API usage and tool permissions."}},
-		{ID: "deepseek-cli", DisplayName: "DeepSeek CLI", Vendor: "DeepSeek", Categories: []string{"ai_cli_agent", "cloud_agent_cli"}, BinaryNames: []string{"deepseek", "deepseek-cli"}, ConfigPaths: []string{filepath.Join(home, ".deepseek"), filepath.Join(home, ".config", "deepseek")}, RiskNotes: []string{"Provider origin is neutral; risk depends on remote API usage and tool permissions."}},
-		{ID: "kimi-cli", DisplayName: "Kimi CLI", Vendor: "Moonshot AI", Categories: []string{"ai_cli_agent", "cloud_agent_cli"}, BinaryNames: []string{"kimi", "kimi-cli"}, ConfigPaths: []string{filepath.Join(home, ".kimi"), filepath.Join(home, ".moonshot"), filepath.Join(home, ".config", "kimi")}, RiskNotes: []string{"Provider origin is neutral; risk depends on remote API usage and tool permissions."}},
-		{ID: "glm-zai-cli", DisplayName: "GLM / Z.ai CLI", Vendor: "Zhipu / Z.ai", Categories: []string{"ai_cli_agent", "cloud_agent_cli"}, BinaryNames: []string{"glm", "zai", "zai-cli"}, ConfigPaths: []string{filepath.Join(home, ".zhipu"), filepath.Join(home, ".zai"), filepath.Join(home, ".glm"), filepath.Join(home, ".bigmodel"), filepath.Join(home, ".codegeex")}, RiskNotes: []string{"Provider origin is neutral; risk depends on remote API usage and tool permissions."}},
-		{ID: "doubao-desktop", DisplayName: "Doubao Desktop", Vendor: "ByteDance", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Doubao.app"), app("豆包.app")}, BinaryNames: []string{"doubao"}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Doubao"), filepath.Join(home, "Library", "Application Support", "豆包"), filepath.Join(home, ".doubao"), filepath.Join(home, ".ark"), filepath.Join(home, ".volcengine")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Doubao")}, RiskNotes: []string{"Provider origin is neutral; app data is metadata-only audited."}},
-		{ID: "kimi-desktop", DisplayName: "Kimi Desktop", Vendor: "Moonshot AI", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Kimi.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Kimi")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Kimi")}, RiskNotes: []string{"Provider origin is neutral; app data is metadata-only audited."}},
-		{ID: "qwen-desktop", DisplayName: "Qwen / Tongyi Desktop", Vendor: "Alibaba", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Qwen.app"), app("通义.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Qwen"), filepath.Join(home, "Library", "Application Support", "Tongyi"), filepath.Join(home, "Library", "Application Support", "通义")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Qwen")}, RiskNotes: []string{"Provider origin is neutral; app data is metadata-only audited."}},
-		{ID: "wenxin-desktop", DisplayName: "Wenxin / ERNIE Desktop", Vendor: "Baidu", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("文心一言.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Wenxin"), filepath.Join(home, "Library", "Application Support", "文心一言")}, RiskNotes: []string{"Provider origin is neutral; app data is metadata-only audited."}},
+		{ID: "qwen-code", DisplayName: "Qwen Code / Qwen CLI", Vendor: "Alibaba", Categories: []string{"ai_cli_agent", "ai_coding_agent", "cloud_agent_cli"}, BinaryNames: []string{"qwen", "qwen-code", "qwen-cli"}, ConfigPaths: []string{filepath.Join(home, ".qwen"), filepath.Join(home, ".qwen-code"), filepath.Join(home, ".dashscope")}, CachePaths: []string{filepath.Join(home, ".modelscope"), filepath.Join(home, ".cache", "modelscope")}, RiskNotes: []string{"Provider catalog membership is neutral; risk depends on remote API usage and tool permissions."}},
+		{ID: "deepseek-cli", DisplayName: "DeepSeek CLI", Vendor: "DeepSeek", Categories: []string{"ai_cli_agent", "cloud_agent_cli"}, BinaryNames: []string{"deepseek", "deepseek-cli"}, ConfigPaths: []string{filepath.Join(home, ".deepseek"), filepath.Join(home, ".config", "deepseek")}, RiskNotes: []string{"Provider catalog membership is neutral; risk depends on remote API usage and tool permissions."}},
+		{ID: "kimi-cli", DisplayName: "Kimi CLI", Vendor: "Moonshot AI", Categories: []string{"ai_cli_agent", "cloud_agent_cli"}, BinaryNames: []string{"kimi", "kimi-cli"}, ConfigPaths: []string{filepath.Join(home, ".kimi"), filepath.Join(home, ".moonshot"), filepath.Join(home, ".config", "kimi")}, RiskNotes: []string{"Provider catalog membership is neutral; risk depends on remote API usage and tool permissions."}},
+		{ID: "glm-zai-cli", DisplayName: "GLM / Z.ai CLI", Vendor: "Zhipu / Z.ai", Categories: []string{"ai_cli_agent", "cloud_agent_cli"}, BinaryNames: []string{"glm", "zai", "zai-cli"}, ConfigPaths: []string{filepath.Join(home, ".zhipu"), filepath.Join(home, ".zai"), filepath.Join(home, ".glm"), filepath.Join(home, ".bigmodel"), filepath.Join(home, ".codegeex")}, RiskNotes: []string{"Provider catalog membership is neutral; risk depends on remote API usage and tool permissions."}},
+		{ID: "doubao-desktop", DisplayName: "Doubao Desktop", Vendor: "ByteDance", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Doubao.app"), app("豆包.app")}, BinaryNames: []string{"doubao"}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Doubao"), filepath.Join(home, "Library", "Application Support", "豆包"), filepath.Join(home, ".doubao"), filepath.Join(home, ".ark"), filepath.Join(home, ".volcengine")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Doubao")}, RiskNotes: []string{"Provider catalog membership is neutral; app data is metadata-only audited."}},
+		{ID: "kimi-desktop", DisplayName: "Kimi Desktop", Vendor: "Moonshot AI", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Kimi.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Kimi")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Kimi")}, RiskNotes: []string{"Provider catalog membership is neutral; app data is metadata-only audited."}},
+		{ID: "qwen-desktop", DisplayName: "Qwen / Tongyi Desktop", Vendor: "Alibaba", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("Qwen.app"), app("通义.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Qwen"), filepath.Join(home, "Library", "Application Support", "Tongyi"), filepath.Join(home, "Library", "Application Support", "通义")}, CachePaths: []string{filepath.Join(home, "Library", "Caches", "Qwen")}, RiskNotes: []string{"Provider catalog membership is neutral; app data is metadata-only audited."}},
+		{ID: "wenxin-desktop", DisplayName: "Wenxin / ERNIE Desktop", Vendor: "Baidu", Categories: []string{"local_llm_desktop", "cloud_agent_cli"}, AppPaths: []string{app("文心一言.app")}, ConfigPaths: []string{filepath.Join(home, "Library", "Application Support", "Wenxin"), filepath.Join(home, "Library", "Application Support", "文心一言")}, RiskNotes: []string{"Provider catalog membership is neutral; app data is metadata-only audited."}},
 	}
 }
 
-func ChineseProviderDefinitions(home string) []AIModelProviderDefinition {
+func AdditionalProviderDefinitions(home string) []AIModelProviderDefinition {
 	return []AIModelProviderDefinition{
-		{ID: "qwen", DisplayName: "Alibaba Qwen / Tongyi / DashScope", CountryOrRegion: "China", Vendor: "Alibaba", Families: []string{"qwen", "qwen2", "qwen2.5", "qwen3", "qwen3.5", "qwen-code", "qwen coder", "tongyi", "dashscope", "modelscope"}, APIEnvKeys: []string{"QWEN_API_KEY", "DASHSCOPE_API_KEY", "ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "MODELSCOPE_API_TOKEN"}, ConfigPaths: []string{filepath.Join(home, ".qwen"), filepath.Join(home, ".qwen-code"), filepath.Join(home, ".dashscope"), filepath.Join(home, ".modelscope")}, CachePaths: []string{filepath.Join(home, ".cache", "modelscope"), filepath.Join(home, ".cache", "huggingface"), filepath.Join(home, ".cache", "ollama")}, ModelCacheHints: []string{"qwen", "dashscope", "modelscope"}, CLINames: []string{"qwen", "qwen-code", "qwen-cli"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "deepseek", DisplayName: "DeepSeek", CountryOrRegion: "China", Vendor: "DeepSeek", Families: []string{"deepseek", "deepseek-coder", "deepseek-r1", "deepseek-v3", "deepseek-v4", "deepseek-chat", "deepseek-reasoner"}, APIEnvKeys: []string{"DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL"}, ConfigPaths: []string{filepath.Join(home, ".deepseek"), filepath.Join(home, ".config", "deepseek")}, CachePaths: []string{filepath.Join(home, ".ollama", "models"), filepath.Join(home, "Library", "Application Support", "LM Studio")}, ModelCacheHints: []string{"deepseek"}, CLINames: []string{"deepseek", "deepseek-cli"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "kimi", DisplayName: "Moonshot AI / Kimi", CountryOrRegion: "China", Vendor: "Moonshot AI", Families: []string{"kimi", "kimi k2", "moonshot", "moonshot-v1", "kimi-k2", "kimi-latest"}, APIEnvKeys: []string{"MOONSHOT_API_KEY", "KIMI_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".kimi"), filepath.Join(home, ".moonshot"), filepath.Join(home, ".config", "kimi")}, CachePaths: []string{filepath.Join(home, "Library", "Application Support", "Kimi"), filepath.Join(home, "Library", "Caches", "Kimi")}, ModelCacheHints: []string{"kimi", "moonshot"}, CLINames: []string{"kimi", "kimi-cli"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "glm-zai", DisplayName: "Zhipu / Z.ai / GLM", CountryOrRegion: "China", Vendor: "Zhipu / Z.ai", Families: []string{"glm", "chatglm", "codegeex", "zhipu", "z.ai", "bigmodel", "glm-4", "glm-4.5", "glm-5", "glm-z1", "glm-coder"}, APIEnvKeys: []string{"ZHIPUAI_API_KEY", "ZAI_API_KEY", "GLM_API_KEY", "BIGMODEL_API_KEY", "CODEGEEX_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".zhipu"), filepath.Join(home, ".zai"), filepath.Join(home, ".glm"), filepath.Join(home, ".bigmodel"), filepath.Join(home, ".codegeex")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface"), filepath.Join(home, "Library", "Application Support", "LM Studio")}, ModelCacheHints: []string{"zhipu", "z.ai", "glm", "chatglm", "codegeex"}, CLINames: []string{"glm", "zai", "zai-cli"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "minimax", DisplayName: "MiniMax", CountryOrRegion: "China", Vendor: "MiniMax", Families: []string{"minimax", "minimax m1", "minimax m2", "abab"}, APIEnvKeys: []string{"MINIMAX_API_KEY", "MINIMAX_GROUP_ID"}, ConfigPaths: []string{filepath.Join(home, ".minimax"), filepath.Join(home, ".config", "minimax")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"minimax", "abab"}, CLINames: []string{"minimax"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "doubao", DisplayName: "ByteDance Doubao / Volcano Engine", CountryOrRegion: "China", Vendor: "ByteDance", Families: []string{"doubao", "豆包", "bytedance", "volcano engine", "ark", "seed", "seed-coder"}, APIEnvKeys: []string{"DOUBAO_API_KEY", "ARK_API_KEY", "VOLCENGINE_ACCESS_KEY", "VOLCENGINE_SECRET_KEY", "BYTEPLUS_API_KEY", "BYTEDANCE_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".doubao"), filepath.Join(home, ".ark"), filepath.Join(home, ".volcengine"), filepath.Join(home, ".byteplus")}, CachePaths: []string{filepath.Join(home, "Library", "Application Support", "Doubao"), filepath.Join(home, "Library", "Caches", "Doubao")}, ModelCacheHints: []string{"doubao", "ark", "volcengine", "bytedance", "seed-coder"}, CLINames: []string{"doubao"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "baidu-ernie", DisplayName: "Baidu ERNIE / Wenxin / Qianfan", CountryOrRegion: "China", Vendor: "Baidu", Families: []string{"ernie", "wenxin", "文心", "baidu", "qianfan", "千帆"}, APIEnvKeys: []string{"BAIDU_API_KEY", "BAIDU_SECRET_KEY", "QIANFAN_ACCESS_KEY", "QIANFAN_SECRET_KEY", "WENXIN_API_KEY", "ERNIE_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".baidu"), filepath.Join(home, ".qianfan"), filepath.Join(home, ".ernie"), filepath.Join(home, ".wenxin")}, CachePaths: []string{filepath.Join(home, "Library", "Application Support", "Wenxin"), filepath.Join(home, "Library", "Application Support", "文心一言")}, ModelCacheHints: []string{"baidu", "ernie", "wenxin", "qianfan"}, CLINames: []string{"ernie", "wenxin"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "baichuan", DisplayName: "Baichuan", CountryOrRegion: "China", Vendor: "Baichuan", Families: []string{"baichuan", "baichuan2", "baichuan-m2"}, APIEnvKeys: []string{"BAICHUAN_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".baichuan")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"baichuan"}, CLINames: []string{"baichuan"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "yi", DisplayName: "01.AI / Yi", CountryOrRegion: "China", Vendor: "01.AI", Families: []string{"yi", "yi-coder", "01.ai", "lingyi", "lingyi wanwu", "01-ai"}, APIEnvKeys: []string{"YI_API_KEY", "LINGYI_API_KEY", "ZEROONE_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".yi"), filepath.Join(home, ".01ai"), filepath.Join(home, ".lingyi")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"yi-coder", "01.ai", "lingyi", "01-ai"}, CLINames: []string{"yi"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "internlm", DisplayName: "Shanghai AI Lab InternLM / InternVL", CountryOrRegion: "China", Vendor: "Shanghai AI Lab", Families: []string{"internlm", "internvl", "opencompass"}, APIEnvKeys: []string{"INTERNLM_API_KEY", "OPENCOMPASS_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".internlm"), filepath.Join(home, ".opencompass")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"internlm", "internvl", "opencompass"}, CLINames: []string{"internlm"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "hunyuan", DisplayName: "Tencent Hunyuan", CountryOrRegion: "China", Vendor: "Tencent", Families: []string{"hunyuan", "tencentcloud", "hunyuan-lite", "hunyuan-turbo", "hunyuan-large"}, APIEnvKeys: []string{"HUNYUAN_API_KEY", "TENCENTCLOUD_SECRET_ID", "TENCENTCLOUD_SECRET_KEY"}, ConfigPaths: []string{filepath.Join(home, ".hunyuan"), filepath.Join(home, ".tencentcloud")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"hunyuan", "tencentcloud"}, CLINames: []string{"hunyuan"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "stepfun", DisplayName: "StepFun / Step", CountryOrRegion: "China", Vendor: "StepFun", Families: []string{"stepfun", "step", "step-2", "step-3"}, APIEnvKeys: []string{"STEPFUN_API_KEY", "STEP_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".stepfun"), filepath.Join(home, ".step")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"stepfun", "step-"}, CLINames: []string{"stepfun"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
-		{ID: "sensenova", DisplayName: "SenseTime SenseNova", CountryOrRegion: "China", Vendor: "SenseTime", Families: []string{"sensenova", "sensetime", "商汤"}, APIEnvKeys: []string{"SENSENOVA_API_KEY", "SENSETIME_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".sensenova"), filepath.Join(home, ".sensetime")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"sensenova", "sensetime"}, CLINames: []string{"sensenova"}, RiskNotes: []string{"Provider origin alone is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "qwen", DisplayName: "Alibaba Qwen / Tongyi / DashScope", ProviderGroup: "Additional", Vendor: "Alibaba", Families: []string{"qwen", "qwen2", "qwen2.5", "qwen3", "qwen3.5", "qwen-code", "qwen coder", "tongyi", "dashscope", "modelscope"}, APIEnvKeys: []string{"QWEN_API_KEY", "DASHSCOPE_API_KEY", "ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "MODELSCOPE_API_TOKEN"}, ConfigPaths: []string{filepath.Join(home, ".qwen"), filepath.Join(home, ".qwen-code"), filepath.Join(home, ".dashscope"), filepath.Join(home, ".modelscope")}, CachePaths: []string{filepath.Join(home, ".cache", "modelscope"), filepath.Join(home, ".cache", "huggingface"), filepath.Join(home, ".cache", "ollama")}, ModelCacheHints: []string{"qwen", "dashscope", "modelscope"}, CLINames: []string{"qwen", "qwen-code", "qwen-cli"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "deepseek", DisplayName: "DeepSeek", ProviderGroup: "Additional", Vendor: "DeepSeek", Families: []string{"deepseek", "deepseek-coder", "deepseek-r1", "deepseek-v3", "deepseek-v4", "deepseek-chat", "deepseek-reasoner"}, APIEnvKeys: []string{"DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL"}, ConfigPaths: []string{filepath.Join(home, ".deepseek"), filepath.Join(home, ".config", "deepseek")}, CachePaths: []string{filepath.Join(home, ".ollama", "models"), filepath.Join(home, "Library", "Application Support", "LM Studio")}, ModelCacheHints: []string{"deepseek"}, CLINames: []string{"deepseek", "deepseek-cli"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "kimi", DisplayName: "Moonshot AI / Kimi", ProviderGroup: "Additional", Vendor: "Moonshot AI", Families: []string{"kimi", "kimi k2", "moonshot", "moonshot-v1", "kimi-k2", "kimi-latest"}, APIEnvKeys: []string{"MOONSHOT_API_KEY", "KIMI_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".kimi"), filepath.Join(home, ".moonshot"), filepath.Join(home, ".config", "kimi")}, CachePaths: []string{filepath.Join(home, "Library", "Application Support", "Kimi"), filepath.Join(home, "Library", "Caches", "Kimi")}, ModelCacheHints: []string{"kimi", "moonshot"}, CLINames: []string{"kimi", "kimi-cli"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "glm-zai", DisplayName: "Zhipu / Z.ai / GLM", ProviderGroup: "Additional", Vendor: "Zhipu / Z.ai", Families: []string{"glm", "chatglm", "codegeex", "zhipu", "z.ai", "bigmodel", "glm-4", "glm-4.5", "glm-5", "glm-z1", "glm-coder"}, APIEnvKeys: []string{"ZHIPUAI_API_KEY", "ZAI_API_KEY", "GLM_API_KEY", "BIGMODEL_API_KEY", "CODEGEEX_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".zhipu"), filepath.Join(home, ".zai"), filepath.Join(home, ".glm"), filepath.Join(home, ".bigmodel"), filepath.Join(home, ".codegeex")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface"), filepath.Join(home, "Library", "Application Support", "LM Studio")}, ModelCacheHints: []string{"zhipu", "z.ai", "glm", "chatglm", "codegeex"}, CLINames: []string{"glm", "zai", "zai-cli"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "minimax", DisplayName: "MiniMax", ProviderGroup: "Additional", Vendor: "MiniMax", Families: []string{"minimax", "minimax m1", "minimax m2", "abab"}, APIEnvKeys: []string{"MINIMAX_API_KEY", "MINIMAX_GROUP_ID"}, ConfigPaths: []string{filepath.Join(home, ".minimax"), filepath.Join(home, ".config", "minimax")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"minimax", "abab"}, CLINames: []string{"minimax"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "doubao", DisplayName: "ByteDance Doubao / Volcano Engine", ProviderGroup: "Additional", Vendor: "ByteDance", Families: []string{"doubao", "豆包", "bytedance", "volcano engine", "ark", "seed", "seed-coder"}, APIEnvKeys: []string{"DOUBAO_API_KEY", "ARK_API_KEY", "VOLCENGINE_ACCESS_KEY", "VOLCENGINE_SECRET_KEY", "BYTEPLUS_API_KEY", "BYTEDANCE_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".doubao"), filepath.Join(home, ".ark"), filepath.Join(home, ".volcengine"), filepath.Join(home, ".byteplus")}, CachePaths: []string{filepath.Join(home, "Library", "Application Support", "Doubao"), filepath.Join(home, "Library", "Caches", "Doubao")}, ModelCacheHints: []string{"doubao", "ark", "volcengine", "bytedance", "seed-coder"}, CLINames: []string{"doubao"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "baidu-ernie", DisplayName: "Baidu ERNIE / Wenxin / Qianfan", ProviderGroup: "Additional", Vendor: "Baidu", Families: []string{"ernie", "wenxin", "文心", "baidu", "qianfan", "千帆"}, APIEnvKeys: []string{"BAIDU_API_KEY", "BAIDU_SECRET_KEY", "QIANFAN_ACCESS_KEY", "QIANFAN_SECRET_KEY", "WENXIN_API_KEY", "ERNIE_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".baidu"), filepath.Join(home, ".qianfan"), filepath.Join(home, ".ernie"), filepath.Join(home, ".wenxin")}, CachePaths: []string{filepath.Join(home, "Library", "Application Support", "Wenxin"), filepath.Join(home, "Library", "Application Support", "文心一言")}, ModelCacheHints: []string{"baidu", "ernie", "wenxin", "qianfan"}, CLINames: []string{"ernie", "wenxin"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "baichuan", DisplayName: "Baichuan", ProviderGroup: "Additional", Vendor: "Baichuan", Families: []string{"baichuan", "baichuan2", "baichuan-m2"}, APIEnvKeys: []string{"BAICHUAN_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".baichuan")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"baichuan"}, CLINames: []string{"baichuan"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "yi", DisplayName: "01.AI / Yi", ProviderGroup: "Additional", Vendor: "01.AI", Families: []string{"yi", "yi-coder", "01.ai", "lingyi", "lingyi wanwu", "01-ai"}, APIEnvKeys: []string{"YI_API_KEY", "LINGYI_API_KEY", "ZEROONE_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".yi"), filepath.Join(home, ".01ai"), filepath.Join(home, ".lingyi")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"yi-coder", "01.ai", "lingyi", "01-ai"}, CLINames: []string{"yi"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "internlm", DisplayName: "Shanghai AI Lab InternLM / InternVL", ProviderGroup: "Additional", Vendor: "Shanghai AI Lab", Families: []string{"internlm", "internvl", "opencompass"}, APIEnvKeys: []string{"INTERNLM_API_KEY", "OPENCOMPASS_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".internlm"), filepath.Join(home, ".opencompass")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"internlm", "internvl", "opencompass"}, CLINames: []string{"internlm"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "hunyuan", DisplayName: "Tencent Hunyuan", ProviderGroup: "Additional", Vendor: "Tencent", Families: []string{"hunyuan", "tencentcloud", "hunyuan-lite", "hunyuan-turbo", "hunyuan-large"}, APIEnvKeys: []string{"HUNYUAN_API_KEY", "TENCENTCLOUD_SECRET_ID", "TENCENTCLOUD_SECRET_KEY"}, ConfigPaths: []string{filepath.Join(home, ".hunyuan"), filepath.Join(home, ".tencentcloud")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"hunyuan", "tencentcloud"}, CLINames: []string{"hunyuan"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "stepfun", DisplayName: "StepFun / Step", ProviderGroup: "Additional", Vendor: "StepFun", Families: []string{"stepfun", "step", "step-2", "step-3"}, APIEnvKeys: []string{"STEPFUN_API_KEY", "STEP_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".stepfun"), filepath.Join(home, ".step")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"stepfun", "step-"}, CLINames: []string{"stepfun"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
+		{ID: "sensenova", DisplayName: "SenseTime SenseNova", ProviderGroup: "Additional", Vendor: "SenseTime", Families: []string{"sensenova", "sensetime", "商汤"}, APIEnvKeys: []string{"SENSENOVA_API_KEY", "SENSETIME_API_KEY"}, ConfigPaths: []string{filepath.Join(home, ".sensenova"), filepath.Join(home, ".sensetime")}, CachePaths: []string{filepath.Join(home, ".cache", "huggingface")}, ModelCacheHints: []string{"sensenova", "sensetime"}, CLINames: []string{"sensenova"}, RiskNotes: []string{"Provider catalog membership is not a risk. Review remote API usage and context/tool permissions."}},
 	}
 }
 
@@ -533,22 +533,22 @@ func detectOpenCode(cfg audit.RuntimeConfig) audit.OpenCodeInfo {
 	return info
 }
 
-func detectChineseAIProviders(cfg audit.RuntimeConfig) []audit.ChineseAIProviderInfo {
-	var providers []audit.ChineseAIProviderInfo
+func detectAdditionalAIProviders(cfg audit.RuntimeConfig) []audit.AdditionalAIProviderInfo {
+	var providers []audit.AdditionalAIProviderInfo
 	projectMentions := map[string][]string{}
 	if cfg.Deep && cfg.ProjectRoot != "" {
 		projectMentions = scanProjectForProviderMentions(cfg)
 	}
-	for _, def := range ChineseProviderDefinitions(cfg.HomeDir) {
-		info := audit.ChineseAIProviderInfo{
+	for _, def := range AdditionalProviderDefinitions(cfg.HomeDir) {
+		info := audit.AdditionalAIProviderInfo{
 			ID:              def.ID,
 			DisplayName:     def.DisplayName,
-			CountryOrRegion: def.CountryOrRegion,
+			ProviderGroup:   def.ProviderGroup,
 			Vendor:          def.Vendor,
 			Families:        append([]string(nil), def.Families...),
 			ModelCacheHints: append([]string(nil), def.ModelCacheHints...),
 			RiskNotes:       append([]string(nil), def.RiskNotes...),
-			Recommendation:  "Provider origin is not a risk by itself. Review remote API usage, context sharing, token exposure, unsafe agent permissions, logs/caches, and exposed local servers.",
+			Recommendation:  "Provider catalog membership is not a risk by itself. Review remote API usage, context sharing, token exposure, unsafe agent permissions, logs/caches, and exposed local servers.",
 		}
 		info.EnvKeysDetected = detectedEnvKeys(def.APIEnvKeys)
 		info.ConfigPaths = existingPaths(def.ConfigPaths)
@@ -575,7 +575,7 @@ func detectChineseAIProviders(cfg audit.RuntimeConfig) []audit.ChineseAIProvider
 
 func scanProjectForProviderMentions(cfg audit.RuntimeConfig) map[string][]string {
 	result := map[string][]string{}
-	defs := ChineseProviderDefinitions(cfg.HomeDir)
+	defs := AdditionalProviderDefinitions(cfg.HomeDir)
 	walkLimited(cfg.ProjectRoot, cfg.HomeDir, func(path string, d os.DirEntry) {
 		if d.IsDir() || !shouldScanPromptFile(path) {
 			return
@@ -601,8 +601,8 @@ func scanProjectForProviderMentions(cfg audit.RuntimeConfig) map[string][]string
 	return result
 }
 
-func ClassifyProviderUsageRisk(originOnly bool, hasAPIKeyEnv bool, broadToolAccess bool, shellAccess bool, mcpAccess bool) string {
-	if originOnly && !hasAPIKeyEnv && !broadToolAccess && !shellAccess && !mcpAccess {
+func ClassifyProviderUsageRisk(providerOnly bool, hasAPIKeyEnv bool, broadToolAccess bool, shellAccess bool, mcpAccess bool) string {
+	if providerOnly && !hasAPIKeyEnv && !broadToolAccess && !shellAccess && !mcpAccess {
 		return "info"
 	}
 	if hasAPIKeyEnv && (broadToolAccess || shellAccess || mcpAccess) {
@@ -617,7 +617,7 @@ func ClassifyProviderUsageRisk(originOnly bool, hasAPIKeyEnv bool, broadToolAcce
 	return "info"
 }
 
-func detectLocalModelInventory(cfg audit.RuntimeConfig, providers []audit.ChineseAIProviderInfo) []audit.LocalModelInventoryItem {
+func detectLocalModelInventory(cfg audit.RuntimeConfig, providers []audit.AdditionalAIProviderInfo) []audit.LocalModelInventoryItem {
 	candidates := []struct {
 		tool string
 		path string
@@ -707,7 +707,7 @@ func detectAISecurityTools(cfg audit.RuntimeConfig) []audit.AISecurityToolCatalo
 	return tools
 }
 
-func aiToolCatalogFindings(tools []audit.AIToolCatalogItem, clients []audit.MCPClientCatalogItem, servers []audit.MCPServerCatalogItem, hermes audit.HermesAgentInfo, opencode audit.OpenCodeInfo, providers []audit.ChineseAIProviderInfo, models []audit.LocalModelInventoryItem, securityTools []audit.AISecurityToolCatalogItem) []audit.Finding {
+func aiToolCatalogFindings(tools []audit.AIToolCatalogItem, clients []audit.MCPClientCatalogItem, servers []audit.MCPServerCatalogItem, hermes audit.HermesAgentInfo, opencode audit.OpenCodeInfo, providers []audit.AdditionalAIProviderInfo, models []audit.LocalModelInventoryItem, securityTools []audit.AISecurityToolCatalogItem) []audit.Finding {
 	var findings []audit.Finding
 	findings = append(findings, newFinding("ai-tool-catalog-summary", audit.CategoryAISecurity, "AI Tool Catalog summary", audit.StatusInfo, audit.SeverityInfo, fmt.Sprintf("tools=%d mcp_clients=%d mcp_servers=%d providers=%d local_model_paths=%d security_tools=%d", len(tools), len(clients), len(servers), len(providers), len(models), len(securityTools)), "Tool detection is not a risk verdict. Review permissions, context, shell access, remote provider usage, and exposed servers.", ""))
 	if hermes.Detected {
@@ -744,7 +744,7 @@ func aiToolCatalogFindings(tools []audit.AIToolCatalogItem, clients []audit.MCPC
 			severity = audit.SeverityHigh
 		}
 		f := newFinding("ai-provider-"+provider.ID, audit.CategoryAISecurity, provider.DisplayName+" provider artifacts detected", audit.StatusWarn, severity, fmt.Sprintf("env_keys=%s configs=%d caches=%d project_mentions=%d cache_size=%s risk_basis=%s", strings.Join(provider.EnvKeysDetected, ","), len(provider.ConfigPaths), len(provider.CachePaths), len(provider.ProjectMentions), platform.HumanBytes(provider.LocalCacheSizeBytes), provider.RiskLevel), provider.Recommendation, "")
-		f.Subtype = "Chinese AI Models & Providers"
+		f.Subtype = "Additional AI Models & Providers"
 		f.DataExposureRisk = len(provider.EnvKeysDetected) > 0
 		findings = append(findings, f)
 	}
@@ -760,14 +760,14 @@ func aiToolCatalogFindings(tools []audit.AIToolCatalogItem, clients []audit.MCPC
 	return findings
 }
 
-func calculateAIProviderSummary(ctx context.Context, runner *platform.Runner, tools []audit.AIToolCatalogItem, clients []audit.MCPClientCatalogItem, servers []audit.MCPServerCatalogItem, hermes audit.HermesAgentInfo, opencode audit.OpenCodeInfo, providers []audit.ChineseAIProviderInfo, models []audit.LocalModelInventoryItem) audit.AIProviderSummary {
+func calculateAIProviderSummary(ctx context.Context, runner *platform.Runner, tools []audit.AIToolCatalogItem, clients []audit.MCPClientCatalogItem, servers []audit.MCPServerCatalogItem, hermes audit.HermesAgentInfo, opencode audit.OpenCodeInfo, providers []audit.AdditionalAIProviderInfo, models []audit.LocalModelInventoryItem) audit.AIProviderSummary {
 	var summary audit.AIProviderSummary
 	summary.TotalAIToolsDetected = len(tools)
 	summary.TotalMCPClientsDetected = len(clients)
 	summary.TotalMCPServersDetected = len(servers)
 	summary.HermesDetected = hermes.Detected
 	summary.OpenCodeDetected = opencode.Detected
-	summary.ChineseProvidersDetected = len(providers)
+	summary.AdditionalProvidersDetected = len(providers)
 	for _, provider := range providers {
 		summary.RemoteProviderEnvKeysDetected += len(provider.EnvKeysDetected)
 	}
@@ -958,7 +958,7 @@ func containsHintInTreeName(root string, hints []string, home string) bool {
 	return found
 }
 
-func providerHintForPath(path string, providers []audit.ChineseAIProviderInfo) string {
+func providerHintForPath(path string, providers []audit.AdditionalAIProviderInfo) string {
 	lower := strings.ToLower(path)
 	for _, provider := range providers {
 		for _, hint := range provider.ModelCacheHints {

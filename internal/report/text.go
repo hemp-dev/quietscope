@@ -151,7 +151,7 @@ func writeAIToolCatalog(b *strings.Builder, report audit.Report) {
 	fmt.Fprintf(b, "Configured MCP servers: %d\n", summary.TotalMCPServersDetected)
 	fmt.Fprintf(b, "Hermes detected: %t\n", summary.HermesDetected)
 	fmt.Fprintf(b, "OpenCode detected: %t\n", summary.OpenCodeDetected)
-	fmt.Fprintf(b, "Chinese providers detected: %d\n", summary.ChineseProvidersDetected)
+	fmt.Fprintf(b, "Additional providers detected: %d\n", summary.AdditionalProvidersDetected)
 	fmt.Fprintf(b, "Remote provider env keys detected: %d\n", summary.RemoteProviderEnvKeysDetected)
 	fmt.Fprintf(b, "Local model/cache size: %s\n", platform.HumanBytes(summary.LocalModelCacheSizeBytes))
 	fmt.Fprintf(b, "Non-loopback AI servers: %d\n", summary.NonLoopbackAIServers)
@@ -187,12 +187,12 @@ func writeAIToolCatalog(b *strings.Builder, report audit.Report) {
 		fmt.Fprintf(b, "- %s | category=%s | scope=%s | config=%s | command=%s | env_keys=%s | risks=cmd:%t fs:%t net:%t cred:%t cloud:%t browser:%t\n", server.ServerName, server.RiskCategory, server.Scope, server.ConfigPath, server.Command, strings.Join(server.EnvKeysOnly, ","), server.CommandExecutionRisk, server.FilesystemAccessRisk, server.NetworkExfiltrationRisk, server.CredentialAccessRisk, server.CloudAccessRisk, server.BrowserAutomationRisk)
 	}
 
-	writeHeader(b, "Chinese AI Models & Providers")
-	fmt.Fprintln(b, "Provider origin is not a risk by itself. Risk is based on remote API usage, broad context sharing, exposed tokens, unsafe agent permissions, logs/caches, and exposed local servers.")
-	if len(report.ChineseAIProviders) == 0 {
-		fmt.Fprintln(b, "No Chinese provider/model artifacts detected.")
+	writeHeader(b, "Additional AI Models & Providers")
+	fmt.Fprintln(b, "Provider catalog membership is not a risk by itself. Risk is based on remote API usage, broad context sharing, exposed tokens, unsafe agent permissions, logs/caches, and exposed local servers.")
+	if len(report.AdditionalAIProviders) == 0 {
+		fmt.Fprintln(b, "No additional provider/model artifacts detected.")
 	}
-	for _, provider := range report.ChineseAIProviders {
+	for _, provider := range report.AdditionalAIProviders {
 		fmt.Fprintf(b, "- %s | vendor=%s | env_keys=%s | configs=%d | caches=%d | cli=%s | project_mentions=%d | cache_size=%s | risk=%s\n", provider.DisplayName, provider.Vendor, strings.Join(provider.EnvKeysDetected, ","), len(provider.ConfigPaths), len(provider.CachePaths), strings.Join(provider.CLINamesDetected, ","), len(provider.ProjectMentions), platform.HumanBytes(provider.LocalCacheSizeBytes), provider.RiskLevel)
 	}
 
